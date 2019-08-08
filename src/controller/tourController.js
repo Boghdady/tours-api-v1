@@ -5,7 +5,7 @@ const toursList = JSON.parse(
   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`).toString()
 );
 
-// Param Middleware
+// Param Middleware, value = the value of id param
 exports.checkID = (req, res, next, value) => {
   console.log(`Tour id is : ${value}`);
 
