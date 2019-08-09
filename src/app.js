@@ -10,7 +10,9 @@ console.log(`NODE_ENV IS : ${process.env.NODE_ENV}`);
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+// convert request body to json
 app.use(express.json());
+// serve static file
 app.use(express.static(`${__dirname}/public`));
 
 // 2) MIDDLEWARE For Specific routes
