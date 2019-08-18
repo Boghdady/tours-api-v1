@@ -2,7 +2,54 @@ const Tour = require('./../models/tourModel');
 
 exports.getAllTours = async (req, res) => {
   try {
-    const allTours = await Tour.find({});
+    console.log(req.query);
+    //************** 1) BUILD A QUERY *****************//
+    // create new object that takes all fields in query string
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    // delete excluded fields from queryObj if exists
+    excludedFields.forEach(el => delete queryObj[el]);
+
+    console.log(queryObj);
+    // ======> A) Advanced Filtering using gte,gt,lte,lt
+    // Convert object to string
+    let queryStr = JSON.stringify(queryObj);
+    // replace any (gte,gt,lte,lt) with ($gte,$gt,$lte,$lt)
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+    console.log(JSON.parse(queryStr));
+
+    // method 1) Filtering using query object (find return query)
+    let query = Tour.find(JSON.parse(queryStr));
+
+    // method 2) Filtering using mongoose methods
+    // const allTours =  Tour.find({})
+    //   .where('duration').equals(5)
+    //   .where('difficulty').equals('easy');
+
+    // =========> B) Sorting (ask + ,desc -)
+  if(req.query.sort){
+    const sortBy = req.query.sort.split(',').join(' ');
+    console.log(sortBy);
+    query = query.sort(sortBy);
+  } else {
+    // default sort
+    query = query.sort('-createdAt');
+  }
+
+  /* ========> C) Fields limiting : allow clients to choose which field
+                  they wants to get back in the response.
+  */
+  if(req.query.fields) {
+    const fields = req.query.fields.split(',').join(' ');
+    query = query.select(fields);
+  } else {
+    query = query.select('-__v');
+  }
+
+    //************** 2) EXECUTE THE QUERY *****************//
+    const allTours = await query;
+
+    //************** 3) SEND RESPONSE *****************//
     res.status(200).json({
       status: 'success',
       results: allTours.length,
