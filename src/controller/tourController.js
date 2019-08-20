@@ -2,7 +2,7 @@ const Tour = require('./../models/tourModel');
 const ApiFeatures = require('../utils/apiFeatures');
 
 
-// alias 1
+// alias 1 : Get top 5 cheapest tours
 exports.aliasTopCheapestTours = (req, res, next) => {
   req.query.limit = '5';
   req.query.sort = 'price';
@@ -11,7 +11,7 @@ exports.aliasTopCheapestTours = (req, res, next) => {
   next();
 };
 
-// alias 2
+// alias 2 : Get top 5 ratings tours
 exports.aliasTopRatingTours = (req, res, next) => {
   req.query.limit = '5';
   req.query.sort = '-ratingsAverage';
@@ -23,12 +23,11 @@ exports.aliasTopRatingTours = (req, res, next) => {
 
 exports.getAllTours = async (req, res) => {
   try {
-    console.log(req.query);
-    //************** 2) EXECUTE THE QUERY *****************//
-    // const allTours = await query;
-
+    //************** 1) BUILD THE QUERY *****************//
     const apiFeatures = new ApiFeatures(Tour.find(), req.query).filter()
       .sort().limitFields().paginate();
+
+    //************** 2) EXECUTE THE QUERY *****************//
     const allTours = await apiFeatures.mongooseQuery;
 
     //************** 3) SEND RESPONSE *****************//
@@ -102,6 +101,7 @@ exports.getAllTours = async (req, res) => {
   //   const numTours = await Tour.countDocuments();
   //   if (skip >= numTours) throw new Error('This page does not exist');
   // }
+  // const allTours = await query;
 };
 exports.createTour = async (req, res) => {
   try {
@@ -156,6 +156,131 @@ exports.deleteTour = async (req, res) => {
       status: 'success',
       data: null
     });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    });
+  }
+};
+
+/*
+  Aggregation example
+  Aggregation pipeline contains a set of stages
+ */
+exports.getTourStatistics = async (req, res) => {
+  try {
+  const statistics = await Tour.aggregate([
+    // Stage 1
+    {
+      $match: { ratingsAverage: {$gte : 4.5} }
+    },
+    // Stage 2
+    {
+      $group: {
+        // _id: '$ratingsAverage' ,
+        _id: {$toUpper: '$difficulty'} ,
+        // _id: null ,
+        numTours: {$sum: 1}, // counter
+        numRatings: {$sum: '$ratingsQuantity'},
+        // calc the average of all rating that gte 4.5
+        avgRating: { $avg: '$ratingsAverage' },
+        // calc the average price
+        avgPrice: { $avg: '$price'},
+        minPrice: { $min: '$price'},
+        maxPrice: { $max: '$price'}
+        },
+    },
+    // Stage 3
+    {
+      // 1 mean ask, -1 des
+      $sort: { avgPrice: 1}
+    },
+    // // Stage 4
+    // {
+    //   // Excluded or Hide EASY from the result
+    //   $match: { _id: { $ne: 'EASY'}}
+    // }
+  ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {statistics }
+    });
+
+  }catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    });
+  }
+};
+
+/*
+    Another aggregation example,
+    we need to calculate how many tours in each month
+    for the given year
+ */
+exports.getMonthlyPlan = async (req, res) => {
+  try {
+    const year = req.params.year;
+    const plan = await Tour.aggregate([
+      // Stage 1 : unwind
+      {
+        // unwind -> Deconstructs an array field from the input documents to output a document for each element
+        $unwind: '$startDates'
+      },
+      // Stage 2 : $match
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          }
+        }
+      },
+      // Stage 3 : $group
+      {
+        $group: {
+          // $month -> 	Returns the month for a date as a number between 1 (January) and 12 (December).
+          _id: {$month: '$startDates'},
+          numOfToursInMonth: {$sum: 1}, // counter
+          nameOfToursInMonth: {$push: '$name'}, // push names of tours into array
+
+        }
+      },
+      // Stage 4 : $addFields
+      {
+        // add field in the result {name of field = value}
+        $addFields: {month: '$_id'}
+      },
+      // Stage 5 : $project
+      {
+        $project: {
+          // to hide _id field from the output
+          _id: 0
+        }
+      },
+      // Stage 6 : $sort
+      {
+        // 1 mean ask, -1 des
+        $sort: {
+          numOfToursInMonth: -1
+        }
+      },
+      // Stage 7 : $limit
+      {
+        // show only 6 documents
+        $limit: 12
+      }
+
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: { plan }
+    });
+
   } catch (err) {
     res.status(404).json({
       status: 'fail',

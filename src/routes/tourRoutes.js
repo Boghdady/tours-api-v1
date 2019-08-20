@@ -14,6 +14,14 @@ router.route('/top-5-cheapest')
 router.route('/top-5-rating')
   .get(tourController.aliasTopRatingTours, tourController.getAllTours);
 
+// aggregation example 1
+router.route('/tour-statistics')
+  .get(tourController.getTourStatistics);
+
+// aggregation example 2
+router.route('/monthly-plan/:year')
+  .get(tourController.getMonthlyPlan);
+
 router.route('/')
   .get(tourController.getAllTours)
   .post(tourController.createTour);

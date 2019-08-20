@@ -31,7 +31,6 @@ class ApiFeatures {
   sort() {
     if (this.queryString.sort) {
       const sortBy = this.queryString.sort.split(',').join(' ');
-      console.log(sortBy);
       this.mongooseQuery = this.mongooseQuery.sort(sortBy);
     } else {
       // default sort
@@ -41,7 +40,7 @@ class ApiFeatures {
     return this;
   }
 
-  /* ========> C) Fields limiting : allow clients to choose which field
+  /* C) Fields limiting : allow clients to choose which field
              they wants to get back in the response.
   */
   limitFields() {
@@ -55,8 +54,8 @@ class ApiFeatures {
     return this;
   }
 
-  /* =========> D) Pagination
-  page=2&limit=10 ==> 1-10 = page 1 , 11-20 = page 2 , 21-30 page 30
+  /* Pagination
+    page=2&limit=10 ==> 1-10 = page 1 , 11-20 = page 2 , 21-30 page 30
   */
   paginate() {
     const page = this.queryString.page * 1 || 1;
