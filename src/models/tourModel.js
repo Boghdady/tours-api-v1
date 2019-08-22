@@ -55,7 +55,11 @@ const tourSchema = new mongoose.Schema(
       default: Date.now(),
       select: false // excluded or hide createdAt from output
     },
-    startDates: [Date]
+    startDates: [Date],
+    secretTour: {
+      type: Boolean,
+      default: false
+    }
   },
   // Options
   { // to enable showing virtuals fields
@@ -79,11 +83,13 @@ tourSchema.virtual('durationInWeeks').get(function() {
     2- query middleware
     3- aggregate middleware
     4- model middleware
+    docs url : https://mongoosejs.com/docs/middleware.html
  */
 
-/* 1) Document Middleware (pre - post)
+/* 1) Document Middleware (save , validate , remove) , this refers to the document
    pre : will run before an actual event { .save() and .create() }
-  note 1 : this 'save' middleware not work before .insertMany() event or any other functions.
+  note 1 : this 'save' middleware not work before .insertMany() event or
+   any other functions, only working with { .save() and .create() } functions.
   note 2 : we can apply multiple pre and post middleware function
  */
 tourSchema.pre('save', function(next) {
@@ -104,6 +110,24 @@ tourSchema.pre('save', function(next) {
 tourSchema.post('save', function(document, next) {
   // console.log(document);
   console.log('Document type :Post-Save middleware');
+  next();
+});
+
+/* 2) Query Middleware (find ,findOne, deleteMany, ..), this refers to the query
+   allow us to run functions before and after the certain
+   query is executed
+   note : (/^find/) this regular expression to run this middleware in
+   any query start with find word
+ */
+tourSchema.pre(/^find/, function(next) {
+// tourSchema.pre('find', function(next) {
+  this.find({ secretTour: { $ne: true } });
+  next();
+});
+
+// post find middleware will gonna run after the query has already executed
+tourSchema.post(/^find/, function(queryResult, next) {
+  console.log(queryResult);
   next();
 });
 
