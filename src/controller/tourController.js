@@ -170,45 +170,45 @@ exports.deleteTour = async (req, res) => {
  */
 exports.getTourStatistics = async (req, res) => {
   try {
-  const statistics = await Tour.aggregate([
-    // Stage 1
-    {
-      $match: { ratingsAverage: {$gte : 4.5} }
-    },
-    // Stage 2
-    {
-      $group: {
-        // _id: '$ratingsAverage' ,
-        _id: {$toUpper: '$difficulty'} ,
-        // _id: null ,
-        numTours: {$sum: 1}, // counter
-        numRatings: {$sum: '$ratingsQuantity'},
-        // calc the average of all rating that gte 4.5
-        avgRating: { $avg: '$ratingsAverage' },
-        // calc the average price
-        avgPrice: { $avg: '$price'},
-        minPrice: { $min: '$price'},
-        maxPrice: { $max: '$price'}
-        },
-    },
-    // Stage 3
-    {
-      // 1 mean ask, -1 des
-      $sort: { avgPrice: 1}
-    },
-    // // Stage 4
-    // {
-    //   // Excluded or Hide EASY from the result
-    //   $match: { _id: { $ne: 'EASY'}}
-    // }
-  ]);
+    const statistics = await Tour.aggregate([
+      // Stage 1
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } }
+      },
+      // Stage 2
+      {
+        $group: {
+          // _id: '$ratingsAverage' ,
+          _id: { $toUpper: '$difficulty' },
+          // _id: null ,
+          numTours: { $sum: 1 }, // counter
+          numRatings: { $sum: '$ratingsQuantity' },
+          // calc the average of all rating that gte 4.5
+          avgRating: { $avg: '$ratingsAverage' },
+          // calc the average price
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      },
+      // Stage 3
+      {
+        // 1 mean ask, -1 des
+        $sort: { avgPrice: 1 }
+      }
+      // // Stage 4
+      // {
+      //   // Excluded or Hide EASY from the result
+      //   $match: { _id: { $ne: 'EASY'}}
+      // }
+    ]);
 
     res.status(200).json({
       status: 'success',
-      data: {statistics }
+      data: { statistics }
     });
 
-  }catch (err) {
+  } catch (err) {
     res.status(404).json({
       status: 'fail',
       message: err
@@ -235,7 +235,7 @@ exports.getMonthlyPlan = async (req, res) => {
         $match: {
           startDates: {
             $gte: new Date(`${year}-01-01`),
-            $lte: new Date(`${year}-12-31`),
+            $lte: new Date(`${year}-12-31`)
           }
         }
       },
@@ -243,16 +243,16 @@ exports.getMonthlyPlan = async (req, res) => {
       {
         $group: {
           // $month -> 	Returns the month for a date as a number between 1 (January) and 12 (December).
-          _id: {$month: '$startDates'},
-          numOfToursInMonth: {$sum: 1}, // counter
-          nameOfToursInMonth: {$push: '$name'}, // push names of tours into array
+          _id: { $month: '$startDates' },
+          numOfToursInMonth: { $sum: 1 }, // counter
+          nameOfToursInMonth: { $push: '$name' } // push names of tours into array
 
         }
       },
       // Stage 4 : $addFields
       {
         // add field in the result {name of field = value}
-        $addFields: {month: '$_id'}
+        $addFields: { month: '$_id' }
       },
       // Stage 5 : $project
       {

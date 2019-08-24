@@ -8,7 +8,9 @@ const tourSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: [true, 'A tour must have a name'],
-      trim: true
+      trim: true,
+      maxlength: [40, 'A tour must have less or equal than 40 characters'],
+      minlength: [10, 'A tour must have more or equal than 10 characters']
     },
     slug: String,
     duration: {
@@ -21,11 +23,18 @@ const tourSchema = new mongoose.Schema(
     },
     difficulty: {
       type: String,
-      required: [true, 'A tour should have a difficulty']
+      required: [true, 'A tour should have a difficulty'],
+      enum: {
+        // built in validator
+        values: ['easy', 'medium', 'difficult'],
+        message: 'You should choose: easy, medium, difficult'
+      }
     },
     ratingsAverage: {
       type: Number,
-      default: 1.0
+      default: 4.0,
+      min: [1, 'Rating must be above 1.0'],
+      max: [5, 'Rating must be less or equal 5.0']
     },
     ratingsQuantity: {
       type: Number,
@@ -127,7 +136,7 @@ tourSchema.pre(/^find/, function(next) {
 
 // post find middleware will gonna run after the query has already executed
 tourSchema.post(/^find/, function(queryResult, next) {
-  console.log(queryResult);
+  // console.log(queryResult);
   next();
 });
 
