@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const validator = require('validator');
 
 const tourSchema = new mongoose.Schema(
   // Definition
@@ -10,7 +11,9 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'A tour must have a name'],
       trim: true,
       maxlength: [40, 'A tour must have less or equal than 40 characters'],
-      minlength: [10, 'A tour must have more or equal than 10 characters']
+      minlength: [10, 'A tour must have more or equal than 10 characters'],
+      // Do validation using external package (validator pkg)
+      validate: [validator.isLowercase, 'Tour name must be lowercase']
     },
     slug: String,
     duration: {
@@ -44,7 +47,18 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'A tour must have a price']
     },
-    priceDiscount: Number,
+    priceDiscount: {
+      type: Number,
+      // validate if discountPrice value < price
+      // Do validation using mongoose itself
+      validate: {
+        validator: function(val) {
+          // note : this -> points to new document, so this validator will work only on creation
+          return val < this.price;   // 100 < 200 = true, 250 < 200 =  false
+        }, // {VALUE} mean the value for priceDiscount , thanks for mongoose
+        message: 'Discount Price {VALUE} should be less than price'
+      }
+    },
     summary: {
       type: String,
       trim: true,
