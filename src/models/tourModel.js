@@ -121,6 +121,7 @@ tourSchema.pre('save', function(next) {
 });
 
 tourSchema.pre('save', function(next) {
+  // console.log(`Document before send as a response : ${this}`);
   console.log('Document type :Pre-Save middleware');
   next();
 });
