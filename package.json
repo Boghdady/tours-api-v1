@@ -5,7 +5,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "nodemon src/server.js",
-    "start:prod": "NODE_ENV=production nodemon src/server.js"
+    "start:prod": "NODE_ENV=production nodemon src/server.js",
+    "debug": "ndb src/server.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
     "validator": "^11.1.0"
   },
   "devDependencies": {
+    "ndb": "^1.1.4",
     "nodemon": "^1.19.1"
   }
 }
