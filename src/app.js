@@ -1,7 +1,10 @@
 const express = require('express');
 const morgan = require('morgan');
+const AppError = require('./utils/appError');
+const globalErrorHandling = require('./controller/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+
 
 const app = express();
 
@@ -21,11 +24,23 @@ app.use('/api/v1/users', userRouter);
 
 // Handle undefined routs
 app.all('*', (req, res, next) => {
-  res.status(404).json({
-    status: 'fail',
-    message: `Cant't find ${req.originalUrl} on this server`
-  });
-  next();
+  // 1) simple way
+  // res.status(404).json({
+  //   status: 'fail',
+  //   message: `Cant't find ${req.originalUrl} on this server`
+  // });
+  // 2) intermediate way
+  // const err = new Error(`Cant't find ${req.originalUrl} on this server`);
+  // err.status = 'fail';
+  // err.statusCode = 500;
+  /*
+  when passing param to next() express know there is error and
+   will go to The Global Error Handling Directly
+   */
+  // Creating error for test
+  next(new AppError(`Cant't find ${req.originalUrl} on this server`, 404));
 });
 
+// GLOBAL ERROR HANDLING MIDDLEWARE
+app.use(globalErrorHandling);
 module.exports = app;
