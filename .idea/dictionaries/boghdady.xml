@@ -2,6 +2,7 @@
   <dictionary name="boghdady">
     <words>
       <w>dotenv</w>
+      <w>signup</w>
       <w>slugify</w>
       <w>virtuals</w>
     </words>
