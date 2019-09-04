@@ -85,7 +85,8 @@ const tourSchema = new mongoose.Schema(
     }
   },
   // Options
-  { // to enable showing virtuals fields
+  {
+    // to enable showing virtuals fields
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
   }

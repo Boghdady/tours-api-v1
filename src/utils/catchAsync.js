@@ -1,5 +1,5 @@
 /*
- this method to catch errors in Async functions
+ this method to catch errors in Async functions,
  the Async method is promise and return err if rejected, we catch this error
  */
 module.exports = fn => {
