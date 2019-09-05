@@ -53,7 +53,7 @@ const tourSchema = new mongoose.Schema(
       // Do validation using mongoose itself
       validate: {
         validator: function(val) {
-          // note : this -> points to new document, so this validator will work only on creation
+          // note : this -> points to new document, so this validator will work only on creation and save
           return val < this.price;   // 100 < 200 = true, 250 < 200 =  false
         }, // {VALUE} mean the value for priceDiscount , thanks for mongoose
         message: 'Discount Price {VALUE} should be less than price'
