@@ -1,7 +1,9 @@
 <component name="ProjectDictionaryState">
   <dictionary name="index">
     <words>
+      <w>bcrypt</w>
       <w>dotenv</w>
+      <w>signin</w>
     </words>
   </dictionary>
 </component>
