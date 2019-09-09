@@ -3,7 +3,7 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
-const signToken = id => {
+const createToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN
   });
@@ -18,7 +18,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm
   });
   // Create token for the new user
-  const token = signToken(newUser._id);
+  const token = createToken(newUser._id);
 
   // const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
   //   expiresIn: process.env.JWT_EXPIRES_IN
@@ -40,13 +40,13 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Email and password are required', 400));
   }
   // 2) Check if user exist && password correct
-  // .select('+password') ==> to append the password in the result to check if correct with body password
+  // .select('+password') ==> to append the password in the result to check if correct with body password, because we hide the field in userSchema
   const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.checkCorrectPassword(password, user.password))) {
     return next(new AppError('Incorrect email or password', 401));
   }
   // If everything ok, send token to client
-  const token = signToken(user._id);
+  const token = createToken(user._id);
   res.status(200).json({
     status: 'success',
     token
