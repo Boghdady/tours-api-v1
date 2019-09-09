@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
     password: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: 8
+      minlength: 8,
+      select: false // excluded or hide password from response
     },
     passwordConfirm: {
       type: String,
@@ -31,7 +32,8 @@ const userSchema = new mongoose.Schema({
           return val === this.password;
         },
         message: 'Password are not the same'
-      }
+      },
+      select: false // excluded or hide passwordConfirm from response
     }
   },
   // Options
@@ -52,6 +54,18 @@ userSchema.pre('save', async function(next) {
   this.passwordConfirm = undefined;
   next();
 });
+
+/*
+  CREATE INSTANCE METHOD : method will be available in all the User documents
+
+  ex: create method to check if the entire password from body equal the password
+  in the database
+ */
+userSchema.methods.checkCorrectPassword = async function(entireBodyPassword, dbUserPassword) {
+  // note :  this.password will be not available because we hide the password field in userSchema
+  // return true if the same password and false is not the same
+  return await bcrypt.compare(entireBodyPassword, dbUserPassword);
+};
 
 
 const User = mongoose.model('User', userSchema);
