@@ -17,6 +17,13 @@ app.use(express.json());
 // serve static file
 app.use(express.static(`${__dirname}/public`));
 
+// Test the sequence of middleware
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString();
+  // console.log('Header', req.headers);
+  next();
+});
+
 // 2) MIDDLEWARE For Specific routes
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);

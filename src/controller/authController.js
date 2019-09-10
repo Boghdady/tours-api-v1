@@ -1,3 +1,4 @@
+const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
@@ -51,4 +52,28 @@ exports.login = catchAsync(async (req, res, next) => {
     status: 'success',
     token
   });
+});
+
+exports.protect = catchAsync(async (req, res, next) => {
+  let token;
+  // 1) Getting token and check if it exist
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) {
+    return next(new AppError('You are not register, please signup to get access', 401));
+  }
+
+  // 2) Validate the token if verify
+  /* util.promisify :
+     convert traditional callback methods into promises,
+     link : http://tiny.cc/cx5hcz
+   */
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  console.log(decoded);
+  // 3) If token verify then check if user still exist
+
+  // 4) Check if user changed password after the token was issued
+
+  next();
 });
