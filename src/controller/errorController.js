@@ -17,6 +17,12 @@ const handleValidationDB = err => {
   return new AppError(message, 400);
 };
 
+// This error happen when token is wrong (invalid signature)
+const handleJWTChangeTokenError = () => new AppError('Invalid token. Please login again!', 401);
+
+// This error happen when token is expired
+const handleJWTExpiredTokenError = () => new AppError('Token is expired. Please login again!', 401);
+
 const sendErrorForDevelopment = (err, res) => {
   // Showing Operational or Programming and Unknown Errors
   res.status(err.statusCode).json({
@@ -69,6 +75,13 @@ module.exports = (err, req, res, next) => {
     if (error.name === 'CastError') error = handleCastErrorDB(error);
     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
     if (error.name === 'ValidationError') error = handleValidationDB(error);
+    /*
+      Tow types of token error :
+      1- token changed
+      2- token expired
+     */
+    if (error.name === 'JsonWebTokenError') error = handleJWTChangeTokenError();
+    if (error.name === 'TokenExpiredError') error = handleJWTExpiredTokenError();
     sendErrorForProduction(error, res);
   }
 };
