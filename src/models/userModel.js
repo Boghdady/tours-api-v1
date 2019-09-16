@@ -34,7 +34,8 @@ const userSchema = new mongoose.Schema({
         message: 'Password are not the same'
       },
       select: false // excluded or hide passwordConfirm from response
-    }
+    },
+    passwordChangedAt: Date // The data where the password has been changed
   },
   // Options
   {
@@ -58,7 +59,7 @@ userSchema.pre('save', async function(next) {
 /*
   CREATE INSTANCE METHOD : method will be available in all the User documents
 
-  ex: create method to check if the entire password from body equal the password
+  ex: create method to check if the entire password from req.body equal the password
   in the database
  */
 userSchema.methods.checkCorrectPassword = async function(entireBodyPassword, dbUserPassword) {
@@ -67,6 +68,21 @@ userSchema.methods.checkCorrectPassword = async function(entireBodyPassword, dbU
   return await bcrypt.compare(entireBodyPassword, dbUserPassword);
 };
 
+/*
+  CREATE INSTANCE METHOD : method will be available in all the User documents
+  - Check if user changed password after the token was issued or stolen or hacked or any reasons
+  - JWTTimestamp the time of verifying the token
+ */
+userSchema.methods.checkIfUserChangedPassword = function(JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    // Convert passwordChangedAt to timestamp
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    // console.log(changedTimestamp, JWTTimestamp);
+    return JWTTimestamp < changedTimestamp; // that will return true and mean password has been changed
+  }
+  // false => That mean user has not changed his password after verifying the token
+  return false;
+};
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
