@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema({
     phone: {
       type: String
     },
+    role: {
+      type: String,
+      enum: ['user', 'guide', 'lead-guide', 'admin'],
+      default: 'user'
+    },
     password: {
       type: String,
       required: [true, 'Password is required'],

@@ -17,7 +17,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    passwordChangedAt: req.body.passwordChangedAt
+    passwordChangedAt: req.body.passwordChangedAt,
+    role: req.body.role
   });
   // Create token for the new user
   const token = createToken(newUser._id);
@@ -97,3 +98,22 @@ exports.protect = catchAsync(async (req, res, next) => {
   req.user = currentUser;
   next();
 });
+
+// Authorization : authorize only certain types of users to perform certain actions
+// if the verified user is allowed to access a certain resource, not all the logged in users
+// will be able to perform the same actions in our API
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    /*
+     roles are array of args that coming from route.
+     ex: ['admin', 'guide-lead'] and if no args send that
+     mean req.user.role= 'user' by default
+     */
+    // req.user coming from protect method handler
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError('You do not have permission to perform this actions', 403));
+    }
+    next();
+  };
+};
