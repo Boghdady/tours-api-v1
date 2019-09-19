@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -40,7 +41,9 @@ const userSchema = new mongoose.Schema({
       },
       select: false // excluded or hide passwordConfirm from response
     },
-    passwordChangedAt: Date // The data where the password has been changed
+    passwordChangedAt: Date,// The data where the password has been changed
+    passwordResetToken: String,
+    passwordResetExpires: Date
   },
   // Options
   {
@@ -87,6 +90,22 @@ userSchema.methods.checkIfUserChangedPassword = function(JWTTimestamp) {
   }
   // false => That mean user has not changed his password after verifying the token
   return false;
+};
+
+/*
+   Method to generate a random token for reset password
+ */
+userSchema.methods.generatePasswordResetToken = function() {
+  // 1) Create a token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  // 2) Hashed the token and save it to database
+  this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+  console.log({ resetToken }, this.passwordResetToken);
+  // 3) Adding expiration time for token (10 min for example)
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);
