@@ -2,7 +2,12 @@
   <dictionary name="index">
     <words>
       <w>bcrypt</w>
+      <w>boghdady</w>
       <w>dotenv</w>
+      <w>gmail</w>
+      <w>indexgroup</w>
+      <w>mailgun</w>
+      <w>nodemailer</w>
       <w>signin</w>
     </words>
   </dictionary>

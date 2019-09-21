@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const sendEmail = require('../utils/email');
 
 const createToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -55,7 +56,6 @@ exports.login = catchAsync(async (req, res, next) => {
     token
   });
 });
-
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
   // 1) Getting token and check if it exist
@@ -127,10 +127,38 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 2) Generate the random reset token
   const resetToken = user.generatePasswordResetToken();
   // We modify hashed passwordResetToken, passwordResetExpires so we want to save it in db
-  // user.save({ validateBeforeSave: false  });
-  user.save();
+  user.save({ validateBeforeSave: false });
+  // user.save();
 
   // 3) Send token to user's email
+  /* Here we send the original token without encrypted, the encrypted in the db,
+   the next step (resetPassword) we will compare the original ond with the encrypted token in the bd
+   note : we can sent code instead of reset URL in case mobile application or create random code
+   and send it via sms provider
+   */
+  const resetUrl = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
+
+  const message = `Forgot your password? Submit a PATCH request with your new password and 
+  passwordConfirm to : ${resetUrl}.\n If you didn't forgot your password, please ignore this email!`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Your password reset token (valid for 10 min)',
+      message
+    });
+
+    res.status(200).json({
+      status: 'Success',
+      message: 'Token sent to your email!'
+    });
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    user.save({ validateBeforeSave: false });
+    return next(new AppError('There was an error sending the email. Try again later!', 500));
+  }
+
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
