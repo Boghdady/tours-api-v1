@@ -12,6 +12,18 @@ const createToken = id => {
   });
 };
 
+const createSendToken = (user, statusCode, res) => {
+  const token = createToken(user._id);
+
+  res.status(statusCode).json({
+    status: 'success',
+    token: token,
+    data: {
+      user
+    }
+  });
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   // These fields are needed for signin
   const newUser = await User.create({
@@ -23,19 +35,16 @@ exports.signup = catchAsync(async (req, res, next) => {
     role: req.body.role
   });
   // Create token for the new user
-  const token = createToken(newUser._id);
-
-  // const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-  //   expiresIn: process.env.JWT_EXPIRES_IN
+  createSendToken(newUser, 201, res);
+  // const token = createToken(newUser._id);
+  //
+  // res.status(201).json({
+  //   status: 'success',
+  //   token: token,
+  //   data: {
+  //     user: newUser
+  //   }
   // });
-
-  res.status(201).json({
-    status: 'success',
-    token: token,
-    data: {
-      user: newUser
-    }
-  });
 });
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
@@ -51,11 +60,12 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Incorrect email or password', 401));
   }
   // If everything ok, send token to client
-  const token = createToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token
-  });
+  createSendToken(user, 200, res);
+  // const token = createToken(user._id);
+  // res.status(200).json({
+  //   status: 'success',
+  //   token
+  // });
 });
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
@@ -181,9 +191,45 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   // 3) I Updated changePasswordAt property for the current user using middleware in the user model
 
   // 4) Log the user in, send JWT
-  const token = createToken(user._id);
-  res.status(200).json({
-    status: 'Success',
-    token
-  });
+  createSendToken(user, 200, res);
+
+  // const token = createToken(user._id);
+  // res.status(200).json({
+  //   status: 'Success',
+  //   token
+  // });
+});
+
+/*
+    We want to allow the user to change his password after login
+ */
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const { currentPassword, newPassword, newPasswordConfirm } = req.body;
+
+  // 1) Get user from collection
+  const user = await User.findById(req.user.id).select('+password');
+
+  // 2) Check if current password is correct
+  if (!(await user.checkCorrectPassword(currentPassword, user.password))) {
+    return next(new AppError('Your current password is wrong.', 401));
+  }
+  // 3) If correct, set new password and automatically passwordChangedAt property will updated
+  user.password = newPassword;
+  user.passwordConfirm = newPasswordConfirm;
+  await user.save({ validateBeforeSave: true });
+
+  /*
+    note :  we did not use this User.findByIdAndUpdate() because pre middleware and
+    userSchema validator will not work, it only work with save
+   */
+
+  // 4) Log user in, send JWT
+  createSendToken(user, 200, res);
+
+  // const token = createToken(user._id);
+  //
+  // res.status(200).json({
+  //   status: 'Success',
+  //   token
+  // });
 });
