@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema({
     toObject: { virtuals: true }
   });
 
+// Middleware that automatically run before save user document
 userSchema.pre('save', async function(next) {
   // Only run this function if password was actually modified
   if (!this.isModified('password')) return next();
@@ -61,6 +62,15 @@ userSchema.pre('save', async function(next) {
 
   // Delete passwordConfirm field
   this.passwordConfirm = undefined;
+  next();
+});
+
+// Middleware that automatically run before save user document
+userSchema.pre('save', function(next) {
+  // this.isNew mean => when create a new user
+  if (!this.isModified('password') || this.isNew) return next();
+  // we subtract 1 second to ensure that the token is always created after the password has been changed
+  this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
