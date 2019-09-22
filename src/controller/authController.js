@@ -6,14 +6,36 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 
+
 const createToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN
   });
 };
 
+/*
+cookie is small piece of text that a server can send to clients, then when client
+receives a cookie it automatically store it and send back along with all future
+request to the same server
+ */
 const createSendToken = (user, statusCode, res) => {
   const token = createToken(user._id);
+  const cookieOptions = {
+    // the browser or the client in general will delete the cookie after it has expired = 90d
+    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+    /*
+    This mean the cookie will only be sent on an encrypted connection (HTTPS),
+    activate it in production, because it need https
+     */
+    // secure: true,
+    httpOnly: true
+  };
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  // Create cookie and send jwt via cookie
+  res.cookie('jwt', token, cookieOptions);
+
+  // Hide password from response for security measure
+  user.password = undefined;
 
   res.status(statusCode).json({
     status: 'success',
@@ -234,3 +256,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   //   token
   // });
 });
+
+// Rate Limiting:  Limit the number of requests that coming from one single ip
+// implementing maximum number of login attempts
+// we should not save token in local storage instead store it in http cookies
