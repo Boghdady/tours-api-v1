@@ -43,7 +43,12 @@ const userSchema = new mongoose.Schema({
     },
     passwordChangedAt: Date,// The data where the password has been changed
     passwordResetToken: String,
-    passwordResetExpires: Date
+    passwordResetExpires: Date,
+    active: {
+      type: Boolean,
+      default: true,
+      select: false
+    }
   },
   // Options
   {
@@ -52,7 +57,23 @@ const userSchema = new mongoose.Schema({
     toObject: { virtuals: true }
   });
 
-// Middleware that automatically run before save user document
+/*
+  Mongoose Middleware, there are 4 type :
+    1- document middleware
+    2- query middleware
+    3- aggregate middleware
+    4- model middleware
+    docs url : https://mongoosejs.com/docs/middleware.html
+ */
+
+/* 1) Document Middleware (save , validate , remove) , this refers to the document
+   pre : will run before an actual event { .save() and .create() }
+  note 1 : this 'save' middleware not work before .insertMany() event or
+   any other functions, only working with { .save() and .create() } functions.
+  note 2 : we can apply multiple pre and post middleware function
+ */
+
+// Document Middleware that automatically run before save user document
 userSchema.pre('save', async function(next) {
   // Only run this function if password was actually modified
   if (!this.isModified('password')) return next();
@@ -65,12 +86,25 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-// Middleware that automatically run before save user document
+// Document Middleware that automatically run before save user document
 userSchema.pre('save', function(next) {
   // this.isNew mean => when create a new user
   if (!this.isModified('password') || this.isNew) return next();
   // we subtract 1 second to ensure that the token is always created after the password has been changed
   this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
+
+/* 2) Query Middleware (find ,findOne, deleteMany, ..), this refers to the query
+   allow us to run functions before and after the certain
+   query is executed
+   note : (/^find/) this regular expression to run this middleware in
+   any query start with find word
+ */
+
+// Query Middleware to ignore inactive users from any response
+userSchema.pre(/^find/, function(next) {
+  this.find({ active: { $ne: false } });
   next();
 });
 

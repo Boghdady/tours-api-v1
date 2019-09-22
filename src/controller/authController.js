@@ -17,7 +17,7 @@ const createSendToken = (user, statusCode, res) => {
 
   res.status(statusCode).json({
     status: 'success',
-    token: token,
+    token,
     data: {
       user
     }
@@ -31,7 +31,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    passwordChangedAt: req.body.passwordChangedAt,
+    // passwordChangedAt: req.body.passwordChangedAt,
     role: req.body.role
   });
   // Create token for the new user
@@ -69,9 +69,10 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
+  const { authorization } = req.headers;
   // 1) Getting token and check if it exist
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+  if (authorization && authorization.startsWith('Bearer')) {
+    token = authorization.split(' ')[1];
   }
   if (!token) {
     return next(new AppError('You are not register, please signup to get access', 401));
