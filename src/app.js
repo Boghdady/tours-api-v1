@@ -2,6 +2,8 @@ const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xssClean = require('xss-clean');
 
 const AppError = require('./utils/appError');
 const globalErrorHandling = require('./controller/errorController');
@@ -35,6 +37,14 @@ app.use('/api', limiter); // This limiter will affect in routes that start with 
 // app.use(express.json({ limit: '10kb' }));
 app.use(express.json());
 
+/*
+  Data Sanitization : means clean all the data that comes into the application
+  from malicious code => code that trying to attack our application
+ */
+// 1) Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+// 2) Data sanitization against XSS (Cross Site Scripting) attacks
+app.use(xssClean());
 // Serving static files
 app.use(express.static(`${__dirname}/public`));
 
