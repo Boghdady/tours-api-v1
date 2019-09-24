@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xssClean = require('xss-clean');
+const hpp = require('hpp');
 
 const AppError = require('./utils/appError');
 const globalErrorHandling = require('./controller/errorController');
@@ -45,6 +46,14 @@ app.use(express.json());
 app.use(mongoSanitize());
 // 2) Data sanitization against XSS (Cross Site Scripting) attacks
 app.use(xssClean());
+
+// Prevent parameter pollution
+app.use(hpp({
+  // whitelist :  fields that i want to duplicate . ex : duration=5&duration=9
+  whitelist: [
+    'duration', 'ratingsAverage', 'ratingsQuantity', 'maxGroupSize', 'difficulty', 'price'
+  ]
+}));
 // Serving static files
 app.use(express.static(`${__dirname}/public`));
 

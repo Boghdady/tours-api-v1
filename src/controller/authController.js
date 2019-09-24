@@ -260,3 +260,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 // Rate Limiting:  Limit the number of requests that coming from one single ip
 // implementing maximum number of login attempts
 // we should not save token in local storage instead store it in http cookies
+
+/*
+ Preventing parameter pollution :
+ */
