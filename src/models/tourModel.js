@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator');
+const User = require('./../models/userModel');
 
 const tourSchema = new mongoose.Schema(
   // Definition
@@ -11,9 +12,9 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'A tour must have a name'],
       trim: true,
       maxlength: [40, 'A tour must have less or equal than 40 characters'],
-      minlength: [10, 'A tour must have more or equal than 10 characters'],
+      minlength: [10, 'A tour must have more or equal than 10 characters']
       // Do validation using external package (validator pkg)
-      validate: [validator.isLowercase, 'Tour name must be lowercase']
+      // validate: [validator.isLowercase, 'Tour name must be lowercase']
     },
     slug: String,
     duration: {
@@ -83,20 +84,25 @@ const tourSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    /* Mongodb support Geospatial Data.
+    Geospatial Data is basically data that describes places on earth using
+    longitude and latitude coordinates , we can describe simple point or
+    more complex geometries like lines or polygons or multi types of polygons
+     */
     startLocation: {
       // GeoJSON : Specify Geospatial Data
       type: {
         type: String,
         default: 'Point',
-        enum: ['Point']
+        enum: ['Point'] // we can add some possible options like polygons
       },
-      coordinates: [Number], // Will contains lat and long
+      coordinates: [Number], // Will contains lat and long for the point
       address: String,
       description: String
     },
+    // Embedding / De-normalized locations in Tour document
     locations: [
       {
-        // GeoJSON : Specify Geospatial Data
         type: {
           type: String,
           default: 'Point',
@@ -105,7 +111,17 @@ const tourSchema = new mongoose.Schema(
         coordinates: [Number], // Will contains lat and long
         address: String,
         description: String,
-        day: String  // the day of the tour in which people will go to this location
+        day: Number  // the day of the tour in which people will go to this location
+      }
+    ],
+    // Embedding tour guides in Tour: bad solution
+    // guides: Array
+    // ------------
+    // Referencing Tour guides into Tour document (Child Referencing)
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
       }
     ]
   },
@@ -116,6 +132,7 @@ const tourSchema = new mongoose.Schema(
     toObject: { virtuals: true }
   }
 );
+
 
 /*
   Virtual properties did not save in the database, it only show
@@ -146,11 +163,32 @@ tourSchema.pre('save', function(next) {
   next();
 });
 
-tourSchema.pre('save', function(next) {
-  // console.log(`Document before send as a response : ${this}`);
-  console.log('Document type :Pre-Save middleware');
+// Query Middleware run
+/*
+Populate: to get accessed the referenced tour guides whenever we query for
+a certain tour.
+*/
+tourSchema.pre(/^find/, function(next) {
+  // this point to the current query
+  this.populate({
+    path: 'guides',
+    select: '-__v' // hide some fields
+  });
   next();
 });
+
+/* // Embedding users guides into Tour : bad solution
+ This method responsible about get user using their ids and
+ add  them to this.guides array.
+ */
+// tourSchema.pre('save', async function(next) {
+//   // map => returns array of users
+//   const tourGuidesPromises = this.guides.map(async id => await User.findById(id));
+//   // Add Users array at guides array, we use Promise.all because we waiting a promises of (tourGuidesPromises array)
+//   this.guides = await Promise.all(tourGuidesPromises);
+//   next();
+// });
+
 
 /*
   post -> executed after all the pre middleware functions have completed.
@@ -180,6 +218,7 @@ tourSchema.post(/^find/, function(queryResult, next) {
   // console.log(queryResult);
   next();
 });
+
 
 /*  2) Aggregation Middleware :
   allows us to add hocks before and after

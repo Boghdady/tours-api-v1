@@ -2,10 +2,15 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Tour = require('./../../models/tourModel');
+const path = require('path');
 
 
 // Read the variables from config file and save them into node.js environment variables
-dotenv.config({ path: './config.env' });
+// const currentPath = process.cwd();
+const DBPath = '/Users/index/Documents/Work/My Coding/Node/tours-api-v1/config.env';
+
+dotenv.config({ path: DBPath });
+
 
 const DB = process.env.DATABASE.replace(
   '<PASSWORD>',
@@ -26,7 +31,7 @@ mongoose
   });
 
 // READ JSON FILE
-const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8'));
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf-8'));
 
 
 // IMPORT DATA INTO DB
