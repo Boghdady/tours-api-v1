@@ -166,7 +166,9 @@ tourSchema.pre('save', function(next) {
 // Query Middleware run
 /*
 Populate: to get accessed the referenced tour guides whenever we query for
-a certain tour.
+a certain tour document.
+note:  populate will add new query that mean request will do two queries
+one for find tour and second for populate guides
 */
 tourSchema.pre(/^find/, function(next) {
   // this point to the current query
