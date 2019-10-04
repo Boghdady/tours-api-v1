@@ -14,8 +14,8 @@ const reviewSchema = new mongoose.Schema({
       type: Date,
       default: Date.now()
     },
-    // Parent references
-    tour: {
+    // Parent references example
+    tour: { // foreignField
       type: mongoose.Schema.ObjectId,
       ref: 'Tour',
       required: [true, ' Review must belong to a tour']
@@ -42,10 +42,16 @@ note:  populate will add new query that mean request will do three queries
 one for find review and second for populate tour and three for populate user
 */
 reviewSchema.pre(/^find/, function(next) {
+  // Populate user and tour in Review
+  // this.populate({
+  //   path: 'tour',
+  //   select: 'name' // show only tour name
+  // }).populate({
+  //   path: 'user',
+  //   select: 'name photo' // show only user name and his photo
+  // });
+  // We need to populate only user in Review
   this.populate({
-    path: 'tour',
-    select: 'name' // show only tour name
-  }).populate({
     path: 'user',
     select: 'name photo' // show only user name and his photo
   });
@@ -55,3 +61,8 @@ reviewSchema.pre(/^find/, function(next) {
 const Review = mongoose.model('Review', reviewSchema);
 
 module.exports = Review;
+
+// Nested Route example ==> we will get the tour id form url and the user id form logged (token)
+// POST /tour/1276dh2sd/reviews
+// GET /tour/1276dh2sd/reviews
+// GET /tour/1276dh2sd/reviews/j23h9s

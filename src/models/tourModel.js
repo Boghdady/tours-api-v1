@@ -143,6 +143,14 @@ tourSchema.virtual('durationInWeeks').get(function() {
   return this.duration / 7;
 });
 
+// We want to populate reviews of specific Tour from Review Model
+// Virtual populate : to populate tour reviews in Tour Model, we will apply it in getTour handler using populate()
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour', // to connect tour field in Review model
+  localField: '_id'
+});
+
 /*
   Mongoose Middleware, there are 4 type :
     1- document middleware
