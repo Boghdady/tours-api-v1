@@ -76,13 +76,9 @@ exports.getUser = (req, res) => {
     message: 'This route is not yet defined'
   });
 };
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined'
-  });
-};
 
+// Do NOT update password with this! because we use findOneAndUpdate() => some middleware will not work
+exports.updateUser = factory.updateOne(User);
 // Admin only can perform this action
 exports.deleteUser = factory.deleteOne(User);
 
