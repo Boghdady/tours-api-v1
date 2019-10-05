@@ -62,7 +62,3 @@ const Review = mongoose.model('Review', reviewSchema);
 
 module.exports = Review;
 
-// Nested Route example ==> we will get the tour id form url and the user id form logged (token)
-// POST /tour/1276dh2sd/reviews
-// GET /tour/1276dh2sd/reviews
-// GET /tour/1276dh2sd/reviews/j23h9s

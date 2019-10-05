@@ -2,6 +2,7 @@ const User = require('./../models/userModel');
 const ApiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const factory = require('./../controller/handlerFactory');
 
 /*
  filterObj => method take an object and array of allowedFields to return object with
@@ -82,12 +83,6 @@ exports.updateUser = (req, res) => {
   });
 };
 
-
-exports.deleteUser = (req, res) => {
-  //
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined'
-  });
-};
+// Admin only can perform this action
+exports.deleteUser = factory.deleteOne(User);
 

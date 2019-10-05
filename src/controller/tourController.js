@@ -2,6 +2,7 @@ const Tour = require('./../models/tourModel');
 const ApiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const factory = require('./../controller/handlerFactory');
 
 
 // alias 1 : Get top 5 cheapest tours
@@ -131,18 +132,20 @@ exports.updateTour = catchAsync(async (req, res, next) => {
     data: { tour }
   });
 });
-exports.deleteTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndDelete(req.params.id);
-  console.log(tour);
-  if (!tour) {
-    return next(new AppError('No tour found with that ID', 404));
-  }
-  //success, 204 mean no content
-  return res.status(204).json({
-    status: 'success',
-    data: null
-  });
-});
+
+exports.deleteTour = factory.deleteOne(Tour);
+// exports.deleteTour = catchAsync(async (req, res, next) => {
+//   const tour = await Tour.findByIdAndDelete(req.params.id);
+//   console.log(tour);
+//   if (!tour) {
+//     return next(new AppError('No tour found with that ID', 404));
+//   }
+//   //success, 204 mean no content
+//   return res.status(204).json({
+//     status: 'success',
+//     data: null
+//   });
+// });
 
 /*
   Aggregation example
