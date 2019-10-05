@@ -3,19 +3,22 @@ const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const factory = require('./../controller/handlerFactory');
 
-exports.getAllReviews = catchAsync(async (req, res, next) => {
-  let filter = {};
-  if (req.params.tourId) filter = { tour: req.params.tourId };
+exports.getAllReviews = factory.getAll(Review);
 
-  const allReviews = await Review.find(filter);
+// exports.getAllReviews = catchAsync(async (req, res, next) => {
+//   let filter = {};
+//   if (req.params.tourId) filter = { tour: req.params.tourId };
+//
+//   const allReviews = await Review.find(filter);
+//
+//   res.status(200).json({
+//     status: 'success',
+//     results: allReviews.length,
+//     data: { reviews: allReviews }
+//   });
+// });
 
-  res.status(200).json({
-    status: 'success',
-    results: allReviews.length,
-    data: { reviews: allReviews }
-  });
-});
-
+exports.getReview = factory.getOne(Review);
 // Middleware to setUserIdAndTourId before creating Review
 exports.setUserIdAndTourId = (req, res, next) => {
   // Allow nested routes, user can specify manually userId and tourId
