@@ -61,7 +61,8 @@ exports.getAll = Model => catchAsync(async (req, res, next) => {
     .sort().limitFields().paginate();
 
   //************** 2) EXECUTE THE QUERY *****************//
-  const allDocs = await apiFeatures.mongooseQuery;
+  // const allDocs = await apiFeatures.mongooseQuery.explain();
+  const allDocs = await apiFeatures.mongooseQuery.explain();
 
   //************** 3) SEND RESPONSE *****************//
   res.status(200).json({

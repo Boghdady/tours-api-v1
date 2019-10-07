@@ -132,8 +132,16 @@ const tourSchema = new mongoose.Schema(
     toObject: { virtuals: true }
   }
 );
-
-
+/* Indexes :  to improve read performance from databases.
+when we will use Indexes ? when we will query field more, but when we have field with
+high read-write ratio don't create Indexes for this field, because it will take
+more resources. this size of Indexes is bigger than the size of collection itself
+ */
+// (Single Field Index) => we sorting the price index asc , -1 desc
+// tourSchema.index({ price: 1 });
+// (Compound Field Index) => multi Index
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 });
 /*
   Virtual properties did not save in the database, it only show
   in the response.
