@@ -23,6 +23,7 @@ exports.aliasTopRatingTours = (req, res, next) => {
   next();
 };
 
+
 exports.getAllTours = factory.getAll(Tour);
 // exports.getAllTours = catchAsync(async (req, res, next) => {
 //   //************** 1) BUILD THE QUERY *****************//

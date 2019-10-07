@@ -34,6 +34,11 @@ exports.createUser = (req, res) => {
   });
 };
 
+// Middleware to get the userId from logged user, and assign it to req.params.id
+exports.getMe = (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
 // Update current user data
 exports.updateMe = catchAsync(async (req, res, next) => {
   // 1) Create error if user send password in the body

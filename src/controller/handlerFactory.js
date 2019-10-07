@@ -52,9 +52,9 @@ exports.getOne = (Model, populateOptions) => catchAsync(async (req, res, next) =
 });
 
 exports.getAll = Model => catchAsync(async (req, res, next) => {
-  // To allow for nested GET reviews on tour (hack)
-  let filter = {};
-  if (req.params.tourId) filter = { tour: req.params.tourId };
+
+  // To allow for nested
+  let filter = req.filterObject || {};
 
   //************** 1) BUILD THE QUERY *****************//
   const apiFeatures = new ApiFeatures(Model.find(filter), req.query).filter()
