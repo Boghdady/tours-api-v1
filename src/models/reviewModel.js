@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Tour = require('./tourModel');
 
 const reviewSchema = new mongoose.Schema({
     review: {
@@ -56,6 +57,74 @@ reviewSchema.pre(/^find/, function(next) {
     select: 'name photo' // show only user name and his photo
   });
   next();
+});
+
+/* statics methods : we can only call it on the model
+  Create middleware method to calculate the number of rating and average
+  rating for each tour based on tourID in the Review Model
+ */
+reviewSchema.statics.calcAverageRatings = async function(tourId) {
+  const statics = await this.aggregate([
+    // Stage 1
+    {
+      $match: { tour: tourId }
+    },
+    // Stage 2
+    {
+      $group: {
+        _id: '$tour', // Grouped result by tour
+        nRating: { $sum: 1 }, // Counter
+        avgRating: { $avg: '$rating' }
+      }
+    }
+  ]);
+  console.log(statics);
+  // Updating Tour document (ratingsAverage,ratingsQuantity ) by new values that comes from aggregation
+  if (statics) {
+    await Tour.findByIdAndUpdate(tourId, {
+      ratingsQuantity: statics[0].nRating,
+      ratingsAverage: statics[0].avgRating
+    });
+  } else {
+    await Tour.findByIdAndUpdate(tourId, {
+      ratingsQuantity: 0,
+      ratingsAverage: 4.5
+    });
+  }
+};
+
+/*
+  Doc middleware to call calcAverageRatings method when creating or updating
+  new review document
+ */
+reviewSchema.post('save', function() {
+// this points to current review document
+// this.constructor points to Review model , i use it because maybe Review model not created until now in db if we use pre middleware
+//   Review.calcAverageRatings(this.tour);
+  this.constructor.calcAverageRatings(this.tour);
+});
+
+/*
+  Query middleware to call calcAverageRatings method when updating or deleting using this :
+  - findByIdaAndUpdate()
+  - findByIdAndDelete()
+  we can access this methods only on query middleware
+ */
+reviewSchema.pre(/^findOneAnd/, async function(next) {
+  /* this,findOne() => will get the current Query from db because this key word points to the
+  current query not the current document and we need the current document to access the tourId
+  - this.findOne() => points to the current query in the db,note :  can't access it in post query middleware
+  because the query  will be already executed
+  - this.r => create new review collection contain the current query
+   */
+  this.r = await this.findOne();
+  console.log(this.r);
+  next();
+});
+reviewSchema.post(/^findOneAnd/, async function() {
+  // we can not access this.findOne() because the query already executed so we use it in pre query middleware
+  await this.r.constructor.calcAverageRatings(this.r.tour);
+
 });
 
 const Review = mongoose.model('Review', reviewSchema);

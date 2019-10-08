@@ -62,7 +62,7 @@ exports.getAll = Model => catchAsync(async (req, res, next) => {
 
   //************** 2) EXECUTE THE QUERY *****************//
   // const allDocs = await apiFeatures.mongooseQuery.explain();
-  const allDocs = await apiFeatures.mongooseQuery.explain();
+  const allDocs = await apiFeatures.mongooseQuery;
 
   //************** 3) SEND RESPONSE *****************//
   res.status(200).json({
