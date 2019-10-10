@@ -59,11 +59,16 @@ reviewSchema.pre(/^find/, function(next) {
   next();
 });
 
+/*
+  Preventing Duplicate Reviews using Indexes.
+  this index mean : the combination between Tour and Review must be unique
+ */
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
 /* statics methods : we can only call it on the model
   Create middleware method to calculate the number of rating and average
   rating for each tour based on tourID in the Review Model
  */
-reviewSchema.statics.calcAverageRatings = async function(tourId) {
+reviewSchema.statics.calcAverageRatingsAndQuantity = async function(tourId) {
   const statics = await this.aggregate([
     // Stage 1
     {
@@ -78,7 +83,7 @@ reviewSchema.statics.calcAverageRatings = async function(tourId) {
       }
     }
   ]);
-  console.log(statics);
+  // console.log(statics);
   // Updating Tour document (ratingsAverage,ratingsQuantity ) by new values that comes from aggregation
   if (statics) {
     await Tour.findByIdAndUpdate(tourId, {
@@ -101,7 +106,7 @@ reviewSchema.post('save', function() {
 // this points to current review document
 // this.constructor points to Review model , i use it because maybe Review model not created until now in db if we use pre middleware
 //   Review.calcAverageRatings(this.tour);
-  this.constructor.calcAverageRatings(this.tour);
+  this.constructor.calcAverageRatingsAndQuantity(this.tour);
 });
 
 /*
@@ -118,12 +123,12 @@ reviewSchema.pre(/^findOneAnd/, async function(next) {
   - this.r => create new review collection contain the current query
    */
   this.r = await this.findOne();
-  console.log(this.r);
+  // console.log(this.r);
   next();
 });
 reviewSchema.post(/^findOneAnd/, async function() {
   // we can not access this.findOne() because the query already executed so we use it in pre query middleware
-  await this.r.constructor.calcAverageRatings(this.r.tour);
+  await this.r.constructor.calcAverageRatingsAndQuantity(this.r.tour);
 
 });
 

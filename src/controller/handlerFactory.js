@@ -53,7 +53,7 @@ exports.getOne = (Model, populateOptions) => catchAsync(async (req, res, next) =
 
 exports.getAll = Model => catchAsync(async (req, res, next) => {
 
-  // To allow for nested
+  // To allow for nested like get all reviews on a Tour
   let filter = req.filterObject || {};
 
   //************** 1) BUILD THE QUERY *****************//
