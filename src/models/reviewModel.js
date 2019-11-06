@@ -35,6 +35,12 @@ const reviewSchema = new mongoose.Schema({
   }
 );
 
+/*
+  Preventing Duplicate Reviews using Indexes.
+  this index mean : the combination between Tour and Review must be unique
+ */
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
+
 // Query Middleware
 /*
 Populate: to get accessed the referenced tour and user whenever we query for
@@ -59,11 +65,7 @@ reviewSchema.pre(/^find/, function(next) {
   next();
 });
 
-/*
-  Preventing Duplicate Reviews using Indexes.
-  this index mean : the combination between Tour and Review must be unique
- */
-reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
+
 /* statics methods : we can only call it on the model
   Create middleware method to calculate the number of rating and average
   rating for each tour based on tourID in the Review Model

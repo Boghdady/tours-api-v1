@@ -138,7 +138,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 // will be able to perform the same actions in our API
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    /*
+    /*s
      roles are array of args that coming from route.
      ex: ['admin', 'guide-lead'] and if no args send that
      mean req.user.role= 'user' by default
