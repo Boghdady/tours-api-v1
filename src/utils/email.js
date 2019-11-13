@@ -13,7 +13,7 @@ const sendEmail = async options => {
       pass: process.env.EMAIL_PASSWORD
     }
     /* Activate in gmail "less secure app" option if you user email service
-     note : if we use email we can only send 500 email per day */
+     note : if we use gmail we can only send 500 email per day */
   });
 
   // 2) Define the email options
