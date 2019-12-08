@@ -110,6 +110,7 @@ exports.createTour = factory.createOne(Tour);
 //   });
 // });
 
+// populateOptions: to access virtual populate in the Tour model
 exports.getTour = factory.getOne(Tour, { path: 'reviews' });
 // exports.getTour = catchAsync(async (req, res, next) => {
 //

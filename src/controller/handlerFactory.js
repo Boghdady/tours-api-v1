@@ -30,6 +30,7 @@ exports.updateOne = Model => catchAsync(async (req, res, next) => {
 });
 
 exports.createOne = Model => catchAsync(async (req, res, next) => {
+  // create : if there are data in the body not exist in the Schema will ignore it
   const newDoc = await Model.create(req.body);
   res.status(201).json({
     status: 'success',

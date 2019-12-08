@@ -9,10 +9,13 @@ const router = express.Router();
 // router.param('id', tourController.checkID);
 //-------------------------------------------------------------------------------
 /* Nested Route : First Solution (Bad)
-Nested Route example ==> we will get the tour id form url and the user id form logged (token)
-// POST /tour/1276dh2sd/reviews
-// GET /tour/1276dh2sd/reviews
-// GET Review By ID /tour/1276dh2sd/reviews/j23h9s
+Nested Route example ==> we will get the tour id form url and the user id form logged user (token)
+  POST /tour/21676276231/reviews -> create reviews in the tour resource
+  GET /tour/21676276231/reviews -> access reviews in the tour resource
+  GET /tour/21676276231/reviews/7627gf2 -> access a specific review in the tour resource
+  #### This called instead route, it make sense when  there are a clear
+    parent-child relationship between resource, ex : access reviews
+    resource in the tour resource ####
 */
 // router.route('/:tourId/reviews')
 //   .post(authController.protect, authController.restrictTo('user'), reviewController.createReview);

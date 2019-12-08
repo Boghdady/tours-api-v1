@@ -27,6 +27,7 @@ exports.getAllReviews = factory.getAll(Review);
 // });
 
 exports.getReview = factory.getOne(Review);
+
 // Middleware to setUserIdAndTourId before creating Review
 exports.setUserIdAndTourId = (req, res, next) => {
   // Allow nested routes, user can specify manually userId and tourId

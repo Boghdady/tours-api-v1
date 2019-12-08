@@ -115,10 +115,10 @@ const tourSchema = new mongoose.Schema(
         day: Number  // the day of the tour in which people will go to this location
       }
     ],
-    // Embedding tour guides in Tour: bad solution
+    // 1) Embedding tour guides in Tour: bad solution
     // guides: Array
     // ------------
-    // Referencing Tour guides into Tour document (Child Referencing)
+    // 2) Referencing Tour guides into Tour document (Child Referencing) : good solution
     guides: [
       {
         type: mongoose.Schema.ObjectId,
@@ -152,12 +152,13 @@ tourSchema.virtual('durationInWeeks').get(function() {
   return this.duration / 7;
 });
 
-// We want to populate reviews of specific Tour from Review Model
+// Using when i user Parent Referencing
+// We want to populate reviews of specific Tour from Review Model without saving array of review ids in tour model
 // Virtual populate : to populate tour reviews in Tour Model, we will apply it in getTour handler using populate()
 tourSchema.virtual('reviews', {
   ref: 'Review',
   foreignField: 'tour', // to connect tour field in Review model
-  localField: '_id'
+  localField: '_id' // _id called 'tour' in review model and we connect two dataset with id
 });
 
 /*
@@ -180,21 +181,6 @@ tourSchema.pre('save', function(next) {
   next();
 });
 
-// Query Middleware run
-/*
-Populate: to get accessed the referenced tour guides whenever we query for
-a certain tour document.
-note:  populate will add new query that mean request will do two queries
-one for find tour and second for populate guides
-*/
-tourSchema.pre(/^find/, function(next) {
-  // this point to the current query
-  this.populate({
-    path: 'guides',
-    select: '-__v' // hide some fields
-  });
-  next();
-});
 
 /* // Embedding users guides into Tour : bad solution
  This method responsible about get user using their ids and
@@ -207,6 +193,25 @@ tourSchema.pre(/^find/, function(next) {
 //   this.guides = await Promise.all(tourGuidesPromises);
 //   next();
 // });
+
+// Query Middleware run
+/*
+Populate: to get accessed the referenced tour guides whenever we query for
+a certain tour document.
+note:  populate will add new query that mean request will do two queries
+one for find tour and second for populate guides
+*/
+// Using when i user child Referencing
+tourSchema.pre(/^find/, function(next) {
+  // this point to the current query
+  this.populate({
+    path: 'guides',
+    select: '-__v' // hide some fields
+  });
+  next();
+});
+
+
 
 
 /*

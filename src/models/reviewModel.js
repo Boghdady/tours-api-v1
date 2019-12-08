@@ -48,6 +48,7 @@ a certain review document.
 note:  populate will add new query that mean request will do three queries
 one for find review and second for populate tour and three for populate user
 */
+// Using when i user Child Referencing
 reviewSchema.pre(/^find/, function(next) {
   // Populate user and tour in Review
   // this.populate({
