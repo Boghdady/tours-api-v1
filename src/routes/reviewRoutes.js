@@ -4,6 +4,7 @@ const authController = require('./../controller/authController');
 
 
 // mergeParams : allow us to access the parameters on other routers
+// ex: we access tourId from tour router
 const router = express.Router({ mergeParams: true });
 
 // That mean => protect all the routes that coming after this middleware

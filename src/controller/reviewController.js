@@ -4,6 +4,8 @@ const AppError = require('./../utils/appError');
 const factory = require('./../controller/handlerFactory');
 
 // Middleware to create filter object and send it to getAll handler before getting all reviews on a Tour
+// filter object to get reviews depending on tourId
+// tourId will come from Nested Route /tour/1276dh2sd/reviews
 exports.createFilterObjectForNestedRoute = (req, res, next) => {
   let filter = {};
   if (req.params.tourId) filter = { tour: req.params.tourId };

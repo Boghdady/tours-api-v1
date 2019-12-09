@@ -45,17 +45,14 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {
     return next(new AppError('This route is not for update password. You should not send password in the body', 400));
   }
-
   // 2) Filtered out unwanted fields names that are not allowed to updated
   // filterObj => method take an object and return object with properties that i need to update
   const filteredBody = filterObj(req.body, 'name', 'email');
-
   // 3) Update user document
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
     runValidators: true
   });
-
   // 4) Send updated user to the client
   res.status(200).json({
     status: 'Success',
@@ -78,7 +75,7 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 });
 exports.getUser = factory.getOne(User);
 
-// Do NOT update password with this! because we use findOneAndUpdate() => some middleware will not work
+// Do NOT update password with factory.updateOne! because we use findOneAndUpdate() => some middleware will not work
 exports.updateUser = factory.updateOne(User);
 // Admin only can perform this action
 exports.deleteUser = factory.deleteOne(User);

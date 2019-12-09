@@ -11,7 +11,7 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 
 // That mean => protect all the routes that coming after this middleware
 router.use(authController.protect);
-
+// Get the userId from current logged user using getMe middleware
 router.get('/me', userController.getMe, userController.getUser);
 router.patch('/updateMe', userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);

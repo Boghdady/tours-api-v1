@@ -39,6 +39,7 @@ exports.createOne = Model => catchAsync(async (req, res, next) => {
 });
 
 exports.getOne = (Model, populateOptions) => catchAsync(async (req, res, next) => {
+  // const doc = await Model.findById(req.params.id).populate('reviews');
   let query = Model.findById(req.params.id);
   if (populateOptions) query = query.populate(populateOptions);
   const doc = await query;
@@ -54,7 +55,7 @@ exports.getOne = (Model, populateOptions) => catchAsync(async (req, res, next) =
 
 exports.getAll = Model => catchAsync(async (req, res, next) => {
 
-  // To allow for nested like get all reviews on a Tour
+  // To allow nested routes like get all reviews on a Tour
   let filter = req.filterObject || {};
 
   //************** 1) BUILD THE QUERY *****************//
