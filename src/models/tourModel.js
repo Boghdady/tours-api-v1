@@ -36,10 +36,11 @@ const tourSchema = new mongoose.Schema(
     },
     ratingsAverage: {
       type: Number,
-      default: 4.5,
+      default: 0,
       min: [1, 'Rating must be above 1.0'],
       max: [5, 'Rating must be less or equal 5.0'],
-      set: val => Math.round(val * 10) / 10 // 4.66666 to 4.7
+      // set function will every time when value is set for this field
+      set: val => Math.round(val * 10) / 10 // 4.66666 * 10, 46.6666, round 47 /10, 4.7
     },
     ratingsQuantity: {
       type: Number,
@@ -134,15 +135,15 @@ const tourSchema = new mongoose.Schema(
   }
 );
 /* Indexes :  to improve read performance from databases.
-when we will use Indexes ? when we will query field more, but when we have field with
-high read-write ratio don't create Indexes for this field, because it will take
+when we will use Indexes ? when we will query field more, but when we have collection with
+high read-write ratio don't create Indexes for fields in this collection, because it will take
 more resources. this size of Indexes is bigger than the size of collection itself
  */
 // (Single Field Index) => we sorting the price index asc , -1 desc
 // tourSchema.index({ price: 1 });
 // (Compound Field Index) => multi Index
 tourSchema.index({ price: 1, ratingsAverage: -1 });
-tourSchema.index({ slug: 1 });
+tourSchema.index({ slug: 1 }); // Single field index
 /*
   Virtual properties did not save in the database, it only show
   in the response.

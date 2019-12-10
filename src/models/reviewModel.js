@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Tour = require('./tourModel');
+var uniqueValidator = require('mongoose-unique-validator')
 
 const reviewSchema = new mongoose.Schema({
     review: {
@@ -37,10 +38,16 @@ const reviewSchema = new mongoose.Schema({
 
 /*
   Preventing Duplicate Reviews using Indexes.
-  this index mean : the combination between Tour and Review must be unique
+  this index mean : the combination between tourId and userId  must be unique
  */
 reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
-
+/*
+mongoose-unique-validator is a plugin which adds pre-save validation
+ for unique fields within a Mongoose schema.
+ */
+reviewSchema.plugin(uniqueValidator, {
+  message : 'Can not write another review in the same tour'
+});
 // Query Middleware
 /*
 Populate: to get accessed the referenced tour and user whenever we query for
@@ -67,75 +74,85 @@ reviewSchema.pre(/^find/, function(next) {
 });
 
 
-/* statics methods : we can only call it on the model
+/* statics methods : we can only call it on the model ex: (Review.calcAverageRatingsAndQuantity() or this.calcAverageRatingsAndQuantity())
   Create middleware method to calculate the number of rating and average
   rating for each tour based on tourID in the Review Model
  */
 reviewSchema.statics.calcAverageRatingsAndQuantity = async function(tourId) {
   const statics = await this.aggregate([
-    // Stage 1
+    // Stage 1 condition => filter review model by tourId => get reviews in specific tour by tourId
     {
       $match: { tour: tourId }
     },
-    // Stage 2
+    // Stage 2 Calculate the statics
     {
       $group: {
-        _id: '$tour', // Grouped result by tour
+        _id: '$tour', // Grouped result by tourId
         nRating: { $sum: 1 }, // Counter
         avgRating: { $avg: '$rating' }
       }
     }
   ]);
-  // console.log(statics);
+  // console.log(statics.length);
+  // console.log(statics); statics is array
   // Updating Tour document (ratingsAverage,ratingsQuantity ) by new values that comes from aggregation
-  if (statics) {
+  if (statics.length >=1) {
     await Tour.findByIdAndUpdate(tourId, {
       ratingsQuantity: statics[0].nRating,
       ratingsAverage: statics[0].avgRating
     });
   } else {
     await Tour.findByIdAndUpdate(tourId, {
-      ratingsQuantity: 0,
-      ratingsAverage: 4.5
+      ratingsQuantity: 0, // set default value
+      ratingsAverage: 0 // set default value
     });
   }
 };
 
 /*
-  Doc middleware to call calcAverageRatings method when creating or updating
-  new review document
+  1) Doc middleware to call calcAverageRatings method after creating new review document.
+  note: post middleware don't take next() in the function args , 'save' work in create only
+  not work with update and delete so we user query middleware
  */
 reviewSchema.post('save', function() {
-// this points to current review document
+// this points to current review document that is currently being saved
 // this.constructor points to Review model , i use it because maybe Review model not created until now in db if we use pre middleware
 //   Review.calcAverageRatings(this.tour);
   this.constructor.calcAverageRatingsAndQuantity(this.tour);
 });
 
 /*
-  Query middleware to call calcAverageRatings method when updating or deleting using this :
+ 2) Query middleware to call calcAverageRatings method when updating or deleting review using this :
   - findByIdaAndUpdate()
   - findByIdAndDelete()
   we can access this methods only on query middleware
  */
 reviewSchema.pre(/^findOneAnd/, async function(next) {
-  /* this,findOne() => will get the current Query from db because this key word points to the
+  /* this,findOne() => will get the current Query from db because this keyword points to the
   current query not the current document and we need the current document to access the tourId
   - this.findOne() => points to the current query in the db,note :  can't access it in post query middleware
   because the query  will be already executed
-  - this.r => create new review collection contain the current query
+  - this.r => create new review collection contain the document that's currently being processed before
+  updating or delete, i want this document to take the tourId field to pass it as args in the
+  calcAverageRatingsAndQuantity method in the post middleware
    */
   this.r = await this.findOne();
   // console.log(this.r);
   next();
 });
+/*
+  We use calcAverageRatingsAndQuantity in the post middleware not in the pre because the
+  document in the pre middleware was not updated and saved in the database
+ */
 reviewSchema.post(/^findOneAnd/, async function() {
-  // we can not access this.findOne() because the query already executed so we use it in pre query middleware
-  await this.r.constructor.calcAverageRatingsAndQuantity(this.r.tour);
+  /*
+   we can not access this.findOne() because the query already executed so we use it in pre query
+   middleware, and now we can access the tourId from " this.r " to calcAverageRatingsAndQuantity
+   */
+  if(this.r) await this.r.constructor.calcAverageRatingsAndQuantity(this.r.tour);
 
 });
 
 const Review = mongoose.model('Review', reviewSchema);
-
 module.exports = Review;
 
