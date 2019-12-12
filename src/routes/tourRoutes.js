@@ -44,6 +44,19 @@ router.route('/tour-statistics')
 router.route('/monthly-plan/:year')
   .get(tourController.getMonthlyPlan);
 
+
+// I'm in ismalia and i want to find all tours within 300 km or mile
+/* args =>
+  distance : the distance i want to find tours with it.
+  center : my current location or the point where we are ex: ismalia or cairo.
+  unit : distance unit (km or mile)
+ */
+// /tours-within/300/center/34.1343974,-118.1314297/unit/mi  => readable way
+// /tours-within/?distance=300&center=34.1343974,-118.1314297,17&unite=mi  => another way
+router.route('/tours-within/:distance/center/:latlng/unit/:unit').get(tourController.getToursWithin);
+
+
+
 router.route('/')
   .get(tourController.getAllTours)
   .post(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourController.createTour);

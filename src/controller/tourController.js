@@ -263,4 +263,28 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   });
 });
 
+// /tours-within/:distance/center/:latlng/unit/:unit
+// /tours-within/300/center/34.1343974,-118.1314297/unit/mi
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+  const {distance, latlng, unit} = req.params;
+  const [lat, lng] = latlng.split(','); // split return array
+  // convert distance to radiance to be understandable for mongodb geospatial query
+  const radius = unit === 'mi' ? distance / 3963.2: distance / 6378.1;
 
+  if(!lat || !lng) {
+    return next(new AppError('Please provide latitude and longitude in the format lat,lng',400));
+  }
+  // Get all tours that their startLocations points within the required point
+  // don't forget to add 2dsphere in the Model
+  const tours = await Tour.find({
+    startLocation:{ $geoWithin: { $centerSphere:[[lng,lat], radius]}}
+  });
+
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: {
+      data: tours,
+    }
+  })
+});

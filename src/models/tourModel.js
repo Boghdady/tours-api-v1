@@ -144,6 +144,7 @@ more resources. this size of Indexes is bigger than the size of collection itsel
 // (Compound Field Index) => multi Index
 tourSchema.index({ price: 1, ratingsAverage: -1 });
 tourSchema.index({ slug: 1 }); // Single field index
+tourSchema.index({startLocation: '2dsphere'}); // For spherical queries
 /*
   Virtual properties did not save in the database, it only show
   in the response.
