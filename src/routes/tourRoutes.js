@@ -55,6 +55,8 @@ router.route('/monthly-plan/:year')
 // /tours-within/?distance=300&center=34.1343974,-118.1314297,17&unite=mi  => another way
 router.route('/tours-within/:distance/center/:latlng/unit/:unit').get(tourController.getToursWithin);
 
+// aggregation to calculate distances to all tours from a certain point
+router.route('/distances/:latlng/unit/:unit').get(tourController.getDistances);
 
 
 router.route('/')

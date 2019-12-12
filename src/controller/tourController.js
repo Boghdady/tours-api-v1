@@ -288,3 +288,37 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
     }
   })
 });
+
+// aggregation to calculate distances to all tours from a certain point, and sorted to the nearest
+exports.getDistances = catchAsync(async (req, res, next) => {
+  const { latlng, unit} = req.params;
+  const [lat, lng] = latlng.split(','); // split return array
+  // convert distance from meter to km or mi
+  const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+  if(!lat || !lng) {
+    return next(new AppError('Please provide latitude and longitude in the format lat,lng',400));
+  }
+
+  const distances = await Tour.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [ lng * 1, lat * 1 ] },
+        distanceField: 'distance',
+        distanceMultiplier: multiplier,
+      }
+    },
+    {  // Fields that i want to show in the response
+      $project: {
+        distance: 1,
+        name: 1,
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      data: distances,
+    }
+  })
+});

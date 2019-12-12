@@ -250,12 +250,12 @@ tourSchema.post(/^find/, function(queryResult, next) {
   allows us to add hocks before and after
   an aggregation happens
  */
-tourSchema.pre('aggregate', function(next) {
-  // unshift  add item on the first of array, shift in the last
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  console.log(this.pipeline());
-  next();
-});
+// tourSchema.pre('aggregate', function(next) {
+//   // unshift  add item on the first of array, shift in the last
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//   console.log(this.pipeline());
+//   next();
+// });
 
 const Tour = mongoose.model('Tour', tourSchema);
 
