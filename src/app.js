@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
@@ -11,8 +12,19 @@ const globalErrorHandling = require('./controller/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
+
+// told express to user pug template engine, we don't need to install pug using npm
+app.set('view engine', 'pug');
+// Determine folder which our views are located in
+app.set('views', path.join(__dirname, 'views'));
+//----------------------------------------------------------------------------//
+// Serving static files
+// app.use(express.static(`${__dirname}/public`));
+app.use(express.static(path.join(__dirname, 'public')));
+//----------------------------------------------------------------------------//
 
 // 1) GLOBAL MIDDLEWARE WORKING IN ALL
 
@@ -55,8 +67,7 @@ app.use(hpp({
     'duration', 'ratingsAverage', 'ratingsQuantity', 'maxGroupSize', 'difficulty', 'price'
   ]
 }));
-// Serving static files
-app.use(express.static(`${__dirname}/public`));
+
 
 // Test the sequence of middleware (only test middleware you can delete it)
 app.use((req, res, next) => {
@@ -64,8 +75,10 @@ app.use((req, res, next) => {
   // console.log('Header', req.headers);
   next();
 });
+//----------------------------------------------------------------------------//
 
 // 2) MIDDLEWARE For Specific routes
+app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
