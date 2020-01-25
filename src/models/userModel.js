@@ -18,6 +18,9 @@ const userSchema = new mongoose.Schema({
     phone: {
       type: String
     },
+    photo: {
+      type: String
+    },
     role: {
       type: String,
       enum: ['user', 'guide', 'lead-guide', 'admin'],
