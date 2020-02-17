@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xssClean = require('xss-clean');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
 
 const AppError = require('./utils/appError');
 const globalErrorHandling = require('./controller/errorController');
@@ -47,9 +48,11 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter); // This limiter will affect in routes that start with api
 
-// Body parser, reading data from body into req.body, options( limit => body accept data in size 10kb)
-// app.use(express.json({ limit: '10kb' }));
-app.use(express.json());
+// Body parser, reading data from body into req.body and parse it, options( limit => body accept data in size 10kb)
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' })); // Parse data that coming from urlencoded form
+app.use(cookieParser()); // I want to print the cookie for each request to make sure it's created for each request
+// app.use(express.json());
 
 /*
   Data Sanitization : means clean all the data that comes into the application
@@ -73,6 +76,7 @@ app.use(hpp({
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
   // console.log('Header', req.headers);
+  console.log(req.cookies);
   next();
 });
 //----------------------------------------------------------------------------//

@@ -11,5 +11,7 @@
     <orderEntry type="library" name="@types/superagent" level="application" />
     <orderEntry type="library" name="@types/prettier" level="application" />
     <orderEntry type="library" name="mapbox-gl" level="application" />
+    <orderEntry type="library" name="axios" level="application" />
+    <orderEntry type="library" name="@types/express" level="application" />
   </component>
 </module>

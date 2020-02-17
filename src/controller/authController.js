@@ -93,8 +93,10 @@ exports.protect = catchAsync(async (req, res, next) => {
   let token;
   const { authorization } = req.headers;
   // 1) Getting token and check if it exist
-  if (authorization && authorization.startsWith('Bearer')) {
+  if (authorization && authorization.startsWith('Bearer')) { // get the cookie from the authorization header postman
     token = authorization.split(' ')[1];
+  } else if (req.cookies.jwt) { // get the token from the cookie
+    token = req.cookies.jwt;
   }
   if (!token) {
     return next(new AppError('You are not register, please signup to get access', 401));
@@ -130,8 +132,66 @@ exports.protect = catchAsync(async (req, res, next) => {
   // 5) Grant access to protected route
   // this req.user will be available in the next middleware
   req.user = currentUser;
+  // every pug template can access res.locals
+  res.locals.user = currentUser;
   next();
 });
+// This middleware not to protect route but to render pages based on user is logged in or not, no errors
+exports.isLoggedIn = async (req, res, next) => {
+  // get the token from the cookie
+  if (req.cookies.jwt) {
+    try {
+      // 2) Validate the token if verify
+      /* util.promisify :
+         convert traditional callback methods into promises,
+         link : http://tiny.cc/cx5hcz
+       */
+      const decoded = await promisify(jwt.verify)(req.cookies.jwt, process.env.JWT_SECRET);
+      // console.log(decoded);
+      /*
+           Tow types of token error May happen here:
+           1- token changed
+           2- token expired
+           so we handle them in global handling errorController instead of try catch
+          */
+
+      // 3) If token verify then check if user still exist
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) {
+        // That mean the token is valid but the user is deleted
+        return next();
+      }
+
+      // 4) Check if user changed password after the token was issued or stolen or hacked or any reasons
+      // iat => is the timestamp for decoded token
+      if (currentUser.checkIfUserChangedPassword(decoded.iat)) {
+        return next();
+      }
+
+      // 5) There is a logged in user, then make to access out template
+      // every pug template can access res.locals
+      res.locals.user = currentUser;
+      return next();
+    } catch (err) {
+      return next();
+    }
+  }
+  // not logged in user
+  next();
+
+};
+
+/*
+    We can't remove jwt from the cookie in the browser so we send random jwt
+    to the same logged user. (nice trick)
+ */
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'logout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
+  });
+  res.status(200).json({ status: 'success' });
+};
 
 // Authorization : authorize only certain types of users to perform certain actions
 // if the verified user is allowed to access a certain resource, not all the logged in users
