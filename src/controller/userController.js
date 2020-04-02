@@ -1,8 +1,53 @@
+const multer = require('multer');
+const sharp = require('sharp');
 const User = require('./../models/userModel');
 const ApiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./../controller/handlerFactory');
+
+
+// Middleware to upload user image to storage directly
+// const multerStorage = multer.diskStorage({
+//   destination: function(req, file, cb) {
+//     cb(null, 'src/public/img/users');
+//   },
+//   // By default, multer removes file extensions so let's add them back
+//
+//   filename: function(req, file, cb) {
+//     const ext = file.originalname.split('.')[1];
+//     cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
+//   }
+// });
+
+const multerStorage = multer.memoryStorage();
+const imageFilter = function(req, file, cb) {
+  // Accept images only
+  if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
+    req.fileValidationError = 'Only image files are allowed!';
+    return cb(new AppError('Only image files are allowed!', 400), false);
+  }
+  cb(null, true);
+};
+
+
+const upload = multer({ storage: multerStorage, fileFilter: imageFilter });
+exports.uploadUserPhoto = upload.single('photo');
+
+exports.resizeUserPhoto = (req, res, next) => {
+  if (!req.file) return next;
+  // When we store image in memory there is no filename property in the req.file so we need to redefined it because we will use it in updateMe middleware
+  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+  // Image processing
+  sharp(req.file.buffer)
+    .resize(500, 500)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`src/public/img/users/${req.file.filename}`);
+
+  next();
+};
+
 
 /*
  filterObj => method take an object and array of allowedFields to return object with
@@ -41,13 +86,16 @@ exports.getMe = (req, res, next) => {
 };
 // Update current user data
 exports.updateMe = catchAsync(async (req, res, next) => {
-  // 1) Create error if user send password in the body
+  console.log(req.file);
+  console.log(req.body);
+  // // 1) Create error if user send password in the body
   if (req.body.password || req.body.passwordConfirm) {
     return next(new AppError('This route is not for update password. You should not send password in the body', 400));
   }
   // 2) Filtered out unwanted fields names that are not allowed to updated
   // filterObj => method take an object and return object with properties that i need to update
   const filteredBody = filterObj(req.body, 'name', 'email');
+  if (req.file) filteredBody.photo = req.file.filename; // add photo name to db
   // 3) Update user document
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,

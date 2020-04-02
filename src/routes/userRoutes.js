@@ -2,6 +2,7 @@ const express = require('express');
 const userController = require('../controller/userController');
 const authController = require('../controller/authController');
 
+
 const router = express.Router();
 
 router.post('/signup', authController.signup);
@@ -14,7 +15,7 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 router.use(authController.protect);
 // Get the userId from current logged user using getMe middleware
 router.get('/me', userController.getMe, userController.getUser);
-router.patch('/updateMe', userController.updateMe);
+router.patch('/updateMe', userController.uploadUserPhoto, userController.resizeUserPhoto, userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);
 router.patch('/updateMyPassword', authController.updatePassword);
 
