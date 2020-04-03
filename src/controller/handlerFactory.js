@@ -1,6 +1,7 @@
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const ApiFeatures = require('./../utils/apiFeatures');
+const Tour = require('./../models/tourModel');
 
 // These function return function (Closure concept in js)
 exports.deleteOne = Model => catchAsync(async (req, res, next) => {
@@ -47,6 +48,18 @@ exports.getOne = (Model, populateOptions) => catchAsync(async (req, res, next) =
   if (!doc) {
     return next(new AppError('No document found with that ID', 404));
   }
+  if (Model === Tour) {
+    // Convert image name to url
+    doc.imageCover = `http://127.0.0.1:3000/img/tours/${doc.imageCover}`;
+
+    let tourImagesUrls = [];
+    doc.images.map((imgName, index) => {
+      const url = `http://127.0.0.1:3000/img/tours/${imgName}`;
+      tourImagesUrls.push(url);
+    });
+    doc.images = tourImagesUrls;
+  }
+
   res.status(200).json({
     status: 'success',
     data: { data: doc }

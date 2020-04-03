@@ -21,6 +21,7 @@ const factory = require('./../controller/handlerFactory');
 // });
 
 const multerStorage = multer.memoryStorage();
+
 const imageFilter = function(req, file, cb) {
   // Accept images only
   if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
@@ -30,23 +31,26 @@ const imageFilter = function(req, file, cb) {
   cb(null, true);
 };
 
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: imageFilter
+});
 
-const upload = multer({ storage: multerStorage, fileFilter: imageFilter });
 exports.uploadUserPhoto = upload.single('photo');
 
-exports.resizeUserPhoto = (req, res, next) => {
+exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
   if (!req.file) return next;
   // When we store image in memory there is no filename property in the req.file so we need to redefined it because we will use it in updateMe middleware
-  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+  req.file.filename = `user-${req.user.id}.jpeg`;
   // Image processing
-  sharp(req.file.buffer)
+  await sharp(req.file.buffer)
     .resize(500, 500)
     .toFormat('jpeg')
     .jpeg({ quality: 90 })
     .toFile(`src/public/img/users/${req.file.filename}`);
 
   next();
-};
+});
 
 
 /*

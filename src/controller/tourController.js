@@ -1,9 +1,72 @@
+const multer = require('multer');
+const sharp = require('sharp');
 const Tour = require('./../models/tourModel');
 const ApiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./../controller/handlerFactory');
 
+
+const multerStorage = multer.memoryStorage();
+
+const imageFilter = function(req, file, cb) {
+  // Accept images only
+  if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
+    req.fileValidationError = 'Only image files are allowed!';
+    return cb(new AppError('Only image files are allowed!', 400), false);
+  }
+  cb(null, true);
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: imageFilter
+});
+
+// If i want to upload images to multiple fields
+exports.uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 }
+]);
+// if i have only oneFiled
+// exports.uploadTourImages = upload.array('images', 3);
+// upload.fields() ==> populate req.files
+// upload.array() ==> populate req.files
+// upload.single() ==> populate req.file
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  console.log(req.files);
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  // 1) Process the imageCover
+  const imageCoverFilename = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`src/public/img/tours/${imageCoverFilename}`);
+  // Add imageCoverFilename to the body to can access it in UpdateOne middleware
+  req.body.imageCover = imageCoverFilename;
+
+  // 2) Process the images
+  req.body.images = [];
+
+  await Promise.all(req.files.images.map(async (file, index) => {
+    const filename = `tour-${req.params.id}-${index + 1}.jpeg`;
+
+    await sharp(file.buffer)
+      .resize(2000, 1333)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`src/public/img/tours/${filename}`);
+
+    // Add images names to body to update DB later
+    req.body.images.push(filename);
+  }));
+
+  console.log(req.body);
+  next();
+});
 
 // alias 1 : Get top 5 cheapest tours
 exports.aliasTopCheapestTours = (req, res, next) => {
@@ -266,51 +329,51 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
 // /tours-within/:distance/center/:latlng/unit/:unit
 // /tours-within/300/center/34.1343974,-118.1314297/unit/mi
 exports.getToursWithin = catchAsync(async (req, res, next) => {
-  const {distance, latlng, unit} = req.params;
+  const { distance, latlng, unit } = req.params;
   const [lat, lng] = latlng.split(','); // split return array
   // convert distance to radiance to be understandable for mongodb geospatial query
-  const radius = unit === 'mi' ? distance / 3963.2: distance / 6378.1;
+  const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
 
-  if(!lat || !lng) {
-    return next(new AppError('Please provide latitude and longitude in the format lat,lng',400));
+  if (!lat || !lng) {
+    return next(new AppError('Please provide latitude and longitude in the format lat,lng', 400));
   }
   // Get all tours that their startLocations points within the required point
   // don't forget to add 2dsphere in the Model
   const tours = await Tour.find({
-    startLocation:{ $geoWithin: { $centerSphere:[[lng,lat], radius]}}
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } }
   });
 
   res.status(200).json({
     status: 'success',
     results: tours.length,
     data: {
-      data: tours,
+      data: tours
     }
-  })
+  });
 });
 
 // aggregation to calculate distances to all tours from a certain point, and sorted to the nearest
 exports.getDistances = catchAsync(async (req, res, next) => {
-  const { latlng, unit} = req.params;
+  const { latlng, unit } = req.params;
   const [lat, lng] = latlng.split(','); // split return array
   // convert distance from meter to km or mi
   const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
-  if(!lat || !lng) {
-    return next(new AppError('Please provide latitude and longitude in the format lat,lng',400));
+  if (!lat || !lng) {
+    return next(new AppError('Please provide latitude and longitude in the format lat,lng', 400));
   }
 
   const distances = await Tour.aggregate([
     {
       $geoNear: {
-        near: { type: 'Point', coordinates: [ lng * 1, lat * 1 ] },
+        near: { type: 'Point', coordinates: [lng * 1, lat * 1] },
         distanceField: 'distance',
-        distanceMultiplier: multiplier,
+        distanceMultiplier: multiplier
       }
     },
     {  // Fields that i want to show in the response
       $project: {
         distance: 1,
-        name: 1,
+        name: 1
       }
     }
   ]);
@@ -318,7 +381,7 @@ exports.getDistances = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: {
-      data: distances,
+      data: distances
     }
-  })
+  });
 });
