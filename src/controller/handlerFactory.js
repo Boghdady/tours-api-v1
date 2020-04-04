@@ -2,6 +2,7 @@ const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const ApiFeatures = require('./../utils/apiFeatures');
 const Tour = require('./../models/tourModel');
+const User = require('./../models/userModel');
 
 // These function return function (Closure concept in js)
 exports.deleteOne = Model => catchAsync(async (req, res, next) => {
@@ -50,14 +51,23 @@ exports.getOne = (Model, populateOptions) => catchAsync(async (req, res, next) =
   }
   if (Model === Tour) {
     // Convert image name to url
-    doc.imageCover = `http://127.0.0.1:3000/img/tours/${doc.imageCover}`;
+    if (doc.imageCover) {
+      doc.imageCover = `http://127.0.0.1:3000/img/tours/${doc.imageCover}`;
+    }
+    if (doc.images) {
+      let tourImagesUrls = [];
+      doc.images.map((imgName, index) => {
+        const url = `http://127.0.0.1:3000/img/tours/${imgName}`;
+        tourImagesUrls.push(url);
+      });
+      doc.images = tourImagesUrls;
+    }
 
-    let tourImagesUrls = [];
-    doc.images.map((imgName, index) => {
-      const url = `http://127.0.0.1:3000/img/tours/${imgName}`;
-      tourImagesUrls.push(url);
-    });
-    doc.images = tourImagesUrls;
+  }
+  if (Model === User) {
+    if (doc.photo) {
+      doc.photo = `http://127.0.0.1:3000/img/users/${doc.photo}`;
+    }
   }
 
   res.status(200).json({
