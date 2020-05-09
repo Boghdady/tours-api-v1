@@ -6,7 +6,7 @@ class ApiFeatures {
 
 	// A) Advanced Filtering using gte,gt,lte,lt
 	filter() {
-		// create new object that takes all fields in query string
+		// create new object that copy all fields in query string
 		const queryObj = { ...this.queryString };
 		const excludedFields = [ 'page', 'sort', 'limit', 'fields' ];
 		// delete excluded fields from queryObj if exists
