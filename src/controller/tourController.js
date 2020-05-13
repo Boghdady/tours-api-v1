@@ -6,28 +6,25 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./../controller/handlerFactory');
 
-
+// Use memory storage so that i can do some processing using sharp before save image to disk
 const multerStorage = multer.memoryStorage();
 
 const imageFilter = function(req, file, cb) {
-  // Accept images only
-  if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
-    req.fileValidationError = 'Only image files are allowed!';
-    return cb(new AppError('Only image files are allowed!', 400), false);
-  }
-  cb(null, true);
+	// Accept images only
+	if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
+		req.fileValidationError = 'Only image files are allowed!';
+		return cb(new AppError('Only image files are allowed!', 400), false);
+	}
+	cb(null, true);
 };
 
 const upload = multer({
-  storage: multerStorage,
-  fileFilter: imageFilter
+	storage: multerStorage,
+	fileFilter: imageFilter
 });
 
 // If i want to upload images to multiple fields
-exports.uploadTourImages = upload.fields([
-  { name: 'imageCover', maxCount: 1 },
-  { name: 'images', maxCount: 3 }
-]);
+exports.uploadTourImages = upload.fields([ { name: 'imageCover', maxCount: 1 }, { name: 'images', maxCount: 3 } ]);
 // if i have only oneFiled
 // exports.uploadTourImages = upload.array('images', 3);
 // upload.fields() ==> populate req.files
@@ -35,57 +32,58 @@ exports.uploadTourImages = upload.fields([
 // upload.single() ==> populate req.file
 
 exports.resizeTourImages = catchAsync(async (req, res, next) => {
-  console.log(req.files);
-  if (!req.files.imageCover || !req.files.images) return next();
+	console.log(req.files);
+	if (!req.files.imageCover || !req.files.images) return next();
 
-  // 1) Process the imageCover
-  const imageCoverFilename = `tour-${req.params.id}-cover.jpeg`;
-  await sharp(req.files.imageCover[0].buffer)
-    .resize(2000, 1333)
-    .toFormat('jpeg')
-    .jpeg({ quality: 90 })
-    .toFile(`src/public/img/tours/${imageCoverFilename}`);
-  // Add imageCoverFilename to the body to can access it in UpdateOne middleware
-  req.body.imageCover = imageCoverFilename;
+	// 1) Process the imageCover
+	const imageCoverFilename = `tour-${req.params.id}-cover.jpeg`;
+	await sharp(req.files.imageCover[0].buffer)
+		.resize(2000, 1333)
+		.toFormat('jpeg')
+		.jpeg({ quality: 90 })
+		.toFile(`src/public/img/tours/${imageCoverFilename}`);
+	// Add imageCoverFilename to the body to can access it in UpdateOne middleware
+	req.body.imageCover = imageCoverFilename;
 
-  // 2) Process the images
-  req.body.images = [];
+	// 2) Process the images
+	req.body.images = [];
 
-  await Promise.all(req.files.images.map(async (file, index) => {
-    const filename = `tour-${req.params.id}-${index + 1}.jpeg`;
+	await Promise.all(
+		req.files.images.map(async (file, index) => {
+			const filename = `tour-${req.params.id}-${index + 1}.jpeg`;
 
-    await sharp(file.buffer)
-      .resize(2000, 1333)
-      .toFormat('jpeg')
-      .jpeg({ quality: 90 })
-      .toFile(`src/public/img/tours/${filename}`);
+			await sharp(file.buffer)
+				.resize(2000, 1333)
+				.toFormat('jpeg')
+				.jpeg({ quality: 90 })
+				.toFile(`src/public/img/tours/${filename}`);
 
-    // Add images names to body to update DB later
-    req.body.images.push(filename);
-  }));
+			// Add images names to body to update DB later
+			req.body.images.push(filename);
+		})
+	);
 
-  console.log(req.body);
-  next();
+	console.log(req.body);
+	next();
 });
 
 // alias 1 : Get top 5 cheapest tours
 exports.aliasTopCheapestTours = (req, res, next) => {
-  req.query.limit = '5';
-  req.query.sort = 'price';
-  req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
+	req.query.limit = '5';
+	req.query.sort = 'price';
+	req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
 
-  next();
+	next();
 };
 
 // alias 2 : Get top 5 ratings tours
 exports.aliasTopRatingTours = (req, res, next) => {
-  req.query.limit = '5';
-  req.query.sort = '-ratingsAverage';
-  req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
+	req.query.limit = '5';
+	req.query.sort = '-ratingsAverage';
+	req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
 
-  next();
+	next();
 };
-
 
 exports.getAllTours = factory.getAll(Tour);
 // exports.getAllTours = catchAsync(async (req, res, next) => {
@@ -222,43 +220,43 @@ exports.deleteTour = factory.deleteOne(Tour);
   Aggregation pipeline contains a set of stages
  */
 exports.getTourStatistics = catchAsync(async (req, res, next) => {
-  const statistics = await Tour.aggregate([
-    // Stage 1
-    {
-      $match: { ratingsAverage: { $gte: 4.5 } }
-    },
-    // Stage 2
-    {
-      $group: {
-        // _id: '$ratingsAverage' ,
-        _id: { $toUpper: '$difficulty' },
-        // _id: null ,
-        numTours: { $sum: 1 }, // counter
-        numRatings: { $sum: '$ratingsQuantity' },
-        // calc the average of all rating that gte 4.5
-        avgRating: { $avg: '$ratingsAverage' },
-        // calc the average price
-        avgPrice: { $avg: '$price' },
-        minPrice: { $min: '$price' },
-        maxPrice: { $max: '$price' }
-      }
-    },
-    // Stage 3
-    {
-      // 1 mean ask, -1 des
-      $sort: { avgPrice: 1 }
-    }
-    // // Stage 4
-    // {
-    //   // Excluded or Hide EASY from the result
-    //   $match: { _id: { $ne: 'EASY'}}
-    // }
-  ]);
+	const statistics = await Tour.aggregate([
+		// Stage 1
+		{
+			$match: { ratingsAverage: { $gte: 4.5 } }
+		},
+		// Stage 2
+		{
+			$group: {
+				// _id: '$ratingsAverage' ,
+				_id: { $toUpper: '$difficulty' },
+				// _id: null ,
+				numTours: { $sum: 1 }, // counter
+				numRatings: { $sum: '$ratingsQuantity' },
+				// calc the average of all rating that gte 4.5
+				avgRating: { $avg: '$ratingsAverage' },
+				// calc the average price
+				avgPrice: { $avg: '$price' },
+				minPrice: { $min: '$price' },
+				maxPrice: { $max: '$price' }
+			}
+		},
+		// Stage 3
+		{
+			// 1 mean ask, -1 des
+			$sort: { avgPrice: 1 }
+		}
+		// // Stage 4
+		// {
+		//   // Excluded or Hide EASY from the result
+		//   $match: { _id: { $ne: 'EASY'}}
+		// }
+	]);
 
-  res.status(200).json({
-    status: 'success',
-    data: { statistics }
-  });
+	res.status(200).json({
+		status: 'success',
+		data: { statistics }
+	});
 });
 
 /*
@@ -267,121 +265,120 @@ exports.getTourStatistics = catchAsync(async (req, res, next) => {
     for the given year
  */
 exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
-  const year = req.params.year;
-  const plan = await Tour.aggregate([
-    // Stage 1 : unwind
-    {
-      // unwind -> Deconstructs an array field from the input documents to output a document for each element
-      $unwind: '$startDates'
-    },
-    // Stage 2 : $match
-    {
-      $match: {
-        startDates: {
-          $gte: new Date(`${year}-01-01`),
-          $lte: new Date(`${year}-12-31`)
-        }
-      }
-    },
-    // Stage 3 : $group
-    {
-      $group: {
-        // $month -> 	Returns the month for a date as a number between 1 (January) and 12 (December).
-        _id: { $month: '$startDates' },
-        numOfToursInMonth: { $sum: 1 }, // counter
-        nameOfToursInMonth: { $push: '$name' } // push names of tours into array
+	const year = req.params.year;
+	const plan = await Tour.aggregate([
+		// Stage 1 : unwind
+		{
+			// unwind -> Deconstructs an array field from the input documents to output a document for each element
+			$unwind: '$startDates'
+		},
+		// Stage 2 : $match
+		{
+			$match: {
+				startDates: {
+					$gte: new Date(`${year}-01-01`),
+					$lte: new Date(`${year}-12-31`)
+				}
+			}
+		},
+		// Stage 3 : $group
+		{
+			$group: {
+				// $month -> 	Returns the month for a date as a number between 1 (January) and 12 (December).
+				_id: { $month: '$startDates' },
+				numOfToursInMonth: { $sum: 1 }, // counter
+				nameOfToursInMonth: { $push: '$name' } // push names of tours into array
+			}
+		},
+		// Stage 4 : $addFields
+		{
+			// add field in the result {name of field = value}
+			$addFields: { month: '$_id' }
+		},
+		// Stage 5 : $project
+		{
+			$project: {
+				// to hide _id field from the output
+				_id: 0
+			}
+		},
+		// Stage 6 : $sort
+		{
+			// 1 mean ask, -1 des
+			$sort: {
+				numOfToursInMonth: -1
+			}
+		},
+		// Stage 7 : $limit
+		{
+			// show only 6 documents
+			$limit: 12
+		}
+	]);
 
-      }
-    },
-    // Stage 4 : $addFields
-    {
-      // add field in the result {name of field = value}
-      $addFields: { month: '$_id' }
-    },
-    // Stage 5 : $project
-    {
-      $project: {
-        // to hide _id field from the output
-        _id: 0
-      }
-    },
-    // Stage 6 : $sort
-    {
-      // 1 mean ask, -1 des
-      $sort: {
-        numOfToursInMonth: -1
-      }
-    },
-    // Stage 7 : $limit
-    {
-      // show only 6 documents
-      $limit: 12
-    }
-
-  ]);
-
-  res.status(200).json({
-    status: 'success',
-    data: { plan }
-  });
+	res.status(200).json({
+		status: 'success',
+		data: { plan }
+	});
 });
 
 // /tours-within/:distance/center/:latlng/unit/:unit
 // /tours-within/300/center/34.1343974,-118.1314297/unit/mi
 exports.getToursWithin = catchAsync(async (req, res, next) => {
-  const { distance, latlng, unit } = req.params;
-  const [lat, lng] = latlng.split(','); // split return array
-  // convert distance to radiance to be understandable for mongodb geospatial query
-  const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+	const { distance, latlng, unit } = req.params;
+	const [ lat, lng ] = latlng.split(','); // split return array
+	// convert distance to radiance to be understandable for mongodb geospatial query
+	const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
 
-  if (!lat || !lng) {
-    return next(new AppError('Please provide latitude and longitude in the format lat,lng', 400));
-  }
-  // Get all tours that their startLocations points within the required point
-  // don't forget to add 2dsphere in the Model
-  const tours = await Tour.find({
-    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } }
-  });
+	if (!lat || !lng) {
+		return next(new AppError('Please provide latitude and longitude in the format lat,lng', 400));
+	}
+	// Get all tours that their startLocations points within the required point
+	// don't forget to add 2dsphere in the Model
+	const tours = await Tour.find({
+		startLocation: { $geoWithin: { $centerSphere: [ [ lng, lat ], radius ] } }
+	});
 
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    data: {
-      data: tours
-    }
-  });
+	res.status(200).json({
+		status: 'success',
+		results: tours.length,
+		data: {
+			data: tours
+		}
+	});
 });
 
 // aggregation to calculate distances to all tours from a certain point, and sorted to the nearest
 exports.getDistances = catchAsync(async (req, res, next) => {
-  const { latlng, unit } = req.params;
-  const [lat, lng] = latlng.split(','); // split return array
-  // convert distance from meter to km or mi
-  const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
-  if (!lat || !lng) {
-    return next(new AppError('Please provide latitude and longitude in the format lat,lng', 400));
-  }
+	const { latlng, unit } = req.params;
+	const [ lat, lng ] = latlng.split(','); // split return array
+	// convert distance from meter to km or mi
+	const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+	if (!lat || !lng) {
+		return next(new AppError('Please provide latitude and longitude in the format lat,lng', 400));
+	}
 
-  const distances = await Tour.aggregate([
-    {
-      $geoNear: {
-        near: { type: 'Point', coordinates: [lng * 1, lat * 1] },
-        distanceField: 'distance',
-        distanceMultiplier: multiplier
-      }
-    },
-    {  // Fields that i want to show in the response
-      $project: {
-        distance: 1,
-        name: 1
-      }
-    }
-  ]);
+	const distances = await Tour.aggregate([
+		{
+			$geoNear: {
+				near: { type: 'Point', coordinates: [ lng * 1, lat * 1 ] },
+				distanceField: 'distance',
+				distanceMultiplier: multiplier
+			}
+		},
+		{
+			// Fields that i want to show in the response
+			$project: {
+				distance: 1,
+				name: 1
+			}
+		}
+	]);
 
-  res.status(200).json({
-    status: 'success',
-    data: {
-      data: distances
-    }
-  });
+	res.status(200).json({
+		status: 'success',
+		data: {
+			data: distances
+		}
+	});
 });
